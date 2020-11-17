@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: LBOS Controller API
+  description: |
+    API Контроллера Сервиса "Больше, чем Балансировка Нагрузки" типа Open Source
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 'v1.0.0'
+tags:
+  - name: balancing service
+  - name: order
+  - name: cluster
+servers:
+  - url: http://localhost:8080/api/v1
+paths:
+  # TODO: кластер балансировки t1 может не существовать в момент заказа
+  /bs:
+    put:
+      tags:
+        - balancing service
+      summary: Обновить существующий Сервис Балансировки
+      requestBody:
+        description: Сервис Балансировки, который требуется обновить
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BalancingService'
+        required: true
+      responses:
+        400:
+          description: Invalid ID supplied
+          content: {}
+        404:
+          description: Сервис Балансировки не найден
+          content: { }
+        405:
+          description: Ошибка валидации
+          content: { }
+    post:
+      tags:
+        - balancing service
+      summary: Создать новый Сервис Балансировки
+      requestBody:
+        # description:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/BalancingService'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalancingService'
+        400:
+          description: Invalid Order
+          content: { }
+    get:
+      tags:
+        - balancing service
+      summary: Получить список всех Сервисов Балансировки
+      responses:
+        default:
+          description: ааа
+          content: { }
+  /bs/{bsId}:
+    get:
+      tags:
+        - balancing service
+      summary: Найти Сервис Балансировки по ID
+      description: Возвращает один Сервис Балансировки
+      parameters:
+        - name: bsId
+          in: path
+          description: ID запрашиваемого Сервиса Балансировки
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalancingService'
+        400:
+          description: invalid ID supplied
+          content: { }
+        404:
+          description: сервис балансировки не найден
+          content: { }
+  #  /clusters:
+  #    get:
+  #      tags:
+  #      - Clusters
+  #      summary: Получить список всех Кластеров
+  #      responses:
+  #        default:
+  #          description: asd
+  #          content: {}
+  # /order:
+  #   get:
+  #     tags:
+  #     - Orders
+  #     summary: asd
+  #     responses:
+  #       default:
+  #         description: asd
+  #         content: {}
+  #     security:
+  #     - api_key: []
+  #   post:
+  #     tags:
+  #     - Orders
+  #     summary: asd
+  #     requestBody:
+  #       description: asdasd
+  #       content:
+  #         '*/*':
+  #           schema:
+  #             $ref: '#/components/schemas/Order'
+  #     responses:
+  #       200:
+  #         description: asd
+  #         content:
+  #           application/json:
+  #             schema:
+  #             $ref: '#/components/schemas/Order'
+  #       400:
+  #         description: Invalid Order
+  #         content: {}
+  #     security:
+  #     - api_key: []
+
+components:
+  schemas:
+    BalancingService:
+      required:
+        - something
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        cluster:
+          $ref: '#/components/schemas/Cluster'
+        order:
+          $ref: '#/components/schemas/Order'
+        vips:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vip'
+
+    # TODO: rip seczone for VIP
+    Vip:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        proto:
+          type: string
+          enum: [ tcp, udp ]
+        address:
+          type: string
+          format: ipv4
+        port:
+          type: number
+        routingType: # TODO: move routingType to ORDER level
+          type: string
+          enum: [ nat, tunnel, gre-tunnel ]
+        balancingType: # TODO: discuss supportive field for b_type
+          type: string
+          enum: [ round-robin, source-ip, source-ip-port, least-connection, uri, url-param, hdr, random, rdp-cookie ]
+        reals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Real'
+        healthchecks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Healthcheck'
+    #        security_zone:
+    #          $ref: '#/components/schemas/SecurityZone'
+
+    Healthcheck:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        config:
+          type: string
+        helloTimer:
+          type: number
+        responseTimer:
+          type: number
+        aliveTreshold:
+          type: number
+        deadTreshold:
+          type: number
+        quorum:
+          type: number
+        hysteresis:
+          type: number
+
+    Real:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        datacenter:
+          type: string
+        security_zone:
+          $ref: '#/components/schemas/SecurityZone'
+        address:
+          type: string
+          format: ipv4
+        port:
+          type: number
+
+    SecurityZone:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+          enum: [ eAZ, eBZ, eMZ, ePZ, eDZ ]
+
+    Cluster:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        datacenter:
+          type: array
+          items:
+            type: string
+            enum: [ SKO, MCOD, AWS, GCR, Azure ]
+        name:
+          type: string
+          readOnly: true
+        security_zone:
+          $ref: '#/components/schemas/SecurityZone'
+        utilisation:
+          type: number
+          readOnly: true
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        typeId:
+          type: string
+          readOnly: true
+          enum: [ create, delete, update ]
+        createdAt:
+          readOnly: true
+          type: string
+          format: date-time
+        source:
+          type: string
+          format: hostanme
+        raw:
+          type: string
+          format: uuid
+          readOnly: true
+        serviceManagerId: # TODO: SM ID создаётся постфактум - нужно иметь возможность апдейтить со стороны API
+          type: string

@@ -156,6 +156,7 @@ components:
             $ref: '#/components/schemas/Vip'
 
     # TODO: rip seczone for VIP
+    # TODO: add qos key
     Vip:
       type: object
       properties:
@@ -255,7 +256,10 @@ components:
           readOnly: true
         security_zone:
           $ref: '#/components/schemas/SecurityZone'
-        utilisation:
+        util_current:
+          type: number
+          readOnly: true
+        util_total:
           type: number
           readOnly: true
 

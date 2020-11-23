@@ -8,17 +8,21 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 'v1.0.0'
 tags:
-  - name: balancing service
-  - name: order
-  - name: cluster
+  - name: balancing-services
+    description: методы работы с Сервисами Балансировки
+  - name: orders
+    description: методы работы с Заказами
+  - name: clusters
+    description: методы работы с Кластерами
 servers:
   - url: http://localhost:8080/api/v1
 paths:
   # TODO: кластер балансировки t1 может не существовать в момент заказа
-  /bs:
+
+  /balancing-services:
     put:
       tags:
-        - balancing service
+        - balancing-services
       summary: Обновить существующий Сервис Балансировки
       requestBody:
         description: Сервис Балансировки, который требуется обновить
@@ -30,7 +34,7 @@ paths:
       responses:
         400:
           description: Invalid ID supplied
-          content: {}
+          content: { }
         404:
           description: Сервис Балансировки не найден
           content: { }
@@ -39,7 +43,7 @@ paths:
           content: { }
     post:
       tags:
-        - balancing service
+        - balancing-services
       summary: Создать новый Сервис Балансировки
       requestBody:
         # description:
@@ -59,16 +63,16 @@ paths:
           content: { }
     get:
       tags:
-        - balancing service
+        - balancing-services
       summary: Получить список всех Сервисов Балансировки
       responses:
         default:
           description: ааа
           content: { }
-  /bs/{bsId}:
+  /balancing-services/{bsId}:
     get:
       tags:
-        - balancing service
+        - balancing-services
       summary: Найти Сервис Балансировки по ID
       description: Возвращает один Сервис Балансировки
       parameters:
@@ -92,48 +96,163 @@ paths:
         404:
           description: сервис балансировки не найден
           content: { }
-  #  /clusters:
-  #    get:
-  #      tags:
-  #      - Clusters
-  #      summary: Получить список всех Кластеров
-  #      responses:
-  #        default:
-  #          description: asd
-  #          content: {}
-  # /order:
-  #   get:
-  #     tags:
-  #     - Orders
-  #     summary: asd
-  #     responses:
-  #       default:
-  #         description: asd
-  #         content: {}
-  #     security:
-  #     - api_key: []
-  #   post:
-  #     tags:
-  #     - Orders
-  #     summary: asd
-  #     requestBody:
-  #       description: asdasd
-  #       content:
-  #         '*/*':
-  #           schema:
-  #             $ref: '#/components/schemas/Order'
-  #     responses:
-  #       200:
-  #         description: asd
-  #         content:
-  #           application/json:
-  #             schema:
-  #             $ref: '#/components/schemas/Order'
-  #       400:
-  #         description: Invalid Order
-  #         content: {}
-  #     security:
-  #     - api_key: []
+
+  /orders:
+    post:
+      tags:
+        - orders
+      summary: создать Заказ
+      operationId: addOrder
+      requestBody:
+        description: qq
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Order"
+        required: true
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: UUID созданного Заказа
+        #          links:
+        #            GetOrderByOrderId:
+        #              opertaionId: pipisaOrder
+        #              parameters:
+        #                pipisa: "$response.body#/id"
+        #              description: >
+        #                The `id` value returned in the response can be used
+        405:
+          description: invalid input
+          content: { }
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+
+    get:
+      tags:
+        - orders
+      summary: получить список всех Заказов
+      description: aaa
+      operationId: getOrders
+      responses:
+        200:
+          description: массив Заказов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+
+    put:
+      tags:
+        - orders
+      summary: обновить существующий Заказ
+      operationId: updateOrder
+      requestBody:
+        description: объект Заказа, который требуется обновить
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Order"
+        required: true
+      responses:
+        400:
+          description: указан неверный ID
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          description: Заказ не найден
+        405:
+          description: ошибка валидации
+
+  /orders/{orderId}:
+    get:
+      tags:
+        - orders
+      summary: найти Заказ по ID
+      description: Возвращает единственный Заказ
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          description: aa
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: успешная операция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        400:
+          description: указан неверный ID
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          description: Заказ не найден
+    post:
+      tags:
+        - orders
+      summary: обновить Заказ через даные формы
+      description: Для Заказа с `{orderId}` обновляются данные, переданные в `application/x-www-form-urlencoded`
+      operationId: updateOrderWithForm
+      parameters:
+        - name: orderId
+          in: path
+          description: bb
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              properties:
+                name:
+                  type: string
+                  description: bb
+                status:
+                  type: string
+                  description: bb
+      responses:
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        405:
+          description: некорректный ввод
+    delete:
+      tags:
+        - orders
+      summary: удалить Заказ
+      operationId: deleteOrder
+      parameters:
+        - name: orderId
+          in: path
+          description: ID Заказ для удаления
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        400:
+          description: указан неверный ID
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          description: Заказ не найден
 
 components:
   schemas:
@@ -154,6 +273,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Vip'
+
+    Cluster:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        datacenter:
+          type: array
+          items:
+            type: string
+            enum: [ SKO, MCOD, AWS, GCR, Azure ]
+        name:
+          type: string
+          readOnly: true
+        security_zone:
+          $ref: '#/components/schemas/SecurityZone'
+        util_current:
+          type: number
+          readOnly: true
+        util_total:
+          type: number
+          readOnly: true
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        typeId:
+          type: string
+          readOnly: true
+          enum: [ create, delete, update ]
+        createdAt:
+          readOnly: true
+          type: string
+          format: date-time
+        source:
+          type: string
+          format: hostanme
+        raw:
+          type: string
+        serviceManagerId: # TODO: SM ID создаётся постфактум - нужно иметь возможность апдейтить со стороны API
+          type: string
 
     # TODO: rip seczone for VIP
     # TODO: add qos key
@@ -240,50 +404,20 @@ components:
           readOnly: true
           enum: [ eAZ, eBZ, eMZ, ePZ, eDZ ]
 
-    Cluster:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        datacenter:
-          type: array
-          items:
+  responses:
+    UnauthorizedError:
+      description: ключ API отсутствует или неверный
+      headers:
+        LBOS_API_KEY:
+          description: auth header
+          schema:
             type: string
-            enum: [ SKO, MCOD, AWS, GCR, Azure ]
-        name:
-          type: string
-          readOnly: true
-        security_zone:
-          $ref: '#/components/schemas/SecurityZone'
-        util_current:
-          type: number
-          readOnly: true
-        util_total:
-          type: number
-          readOnly: true
 
-    Order:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        typeId:
-          type: string
-          readOnly: true
-          enum: [ create, delete, update ]
-        createdAt:
-          readOnly: true
-          type: string
-          format: date-time
-        source:
-          type: string
-          format: hostanme
-        raw:
-          type: string
-          format: uuid
-          readOnly: true
-        serviceManagerId: # TODO: SM ID создаётся постфактум - нужно иметь возможность апдейтить со стороны API
-          type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      in: header
+      name: LBOS_API_KEY
+
+security:
+  - api_key: [ ]

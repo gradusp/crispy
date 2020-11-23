@@ -8,16 +8,104 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 'v1.0.0'
 tags:
+  - name: security-zones
+    description: методы работы с Зонами Безопасности
   - name: balancing-services
     description: методы работы с Сервисами Балансировки
-  - name: orders
-    description: методы работы с Заказами
   - name: clusters
     description: методы работы с Кластерами
+  - name: orders
+    description: методы работы с Заказами
 servers:
   - url: http://localhost:8080/api/v1
 paths:
-  # TODO: кластер балансировки t1 может не существовать в момент заказа
+  /security-zones:
+    post:
+      tags:
+        - security-zones
+      summary: Создать Зону Безопасности
+      operationId: addSecurityZone
+      requestBody:
+        description: При передаче объекта с `name`, произойдёт создание новой записи в БД с автогенерацией _UUIDv4_ для `id`.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecurityZone"
+      responses:
+        201:
+          description: ответ содержит результирующий объект
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityZone"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+    get:
+      tags:
+        - security-zones
+      summary: Получить список всех Зон Безопасности
+      operationId: getSecurityZones
+    put:
+      tags:
+        - security-zones
+      summary: Обновить существующую Зону Безопасности
+      operationId: updateSecurityZone
+  /clusters: # TODO: кластер балансировки t1 может не существовать в момент Заказа
+    post:
+      tags:
+        - clusters
+      summary: aa
+      operationId: addCluster
+      requestBody:
+        description: aa
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cluster"
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                    description: ID созданного Кластера (в формате uuid)
+          links:
+            GetClusterByClusterId:
+              operationId: getClusterById
+              parameters:
+                clusterId: '$response.body#/id'
+              description: >
+                The `id` value returned in the response can be used as
+                the `clusterId` parameter in `GET /clusters/{clusterId}`.
+    get:
+      tags:
+        - clusters
+      responses:
+    put:
+      tags:
+        - clusters
+      responses:
+  /clusters/{clusterId}:
+    get:
+      tags:
+        - clusters
+      summary: найти Кластер по ID
+      description: возвращает один Кластер
+      operationId: getClusterById
+      responses:
+    post:
+      tags:
+        - clusters
+      responses:
+    delete:
+      tags:
+        - clusters
+      responses:
 
   /balancing-services:
     put:
@@ -104,7 +192,7 @@ paths:
       summary: создать Заказ
       operationId: addOrder
       requestBody:
-        description: qq
+        description: объект Заказа, который следует добавить
         content:
           application/json:
             schema:
@@ -121,7 +209,7 @@ paths:
                   id:
                     type: string
                     format: uuid
-                    description: UUID созданного Заказа
+                    description: ID созданного Заказа (в формате uuid)
         #          links:
         #            GetOrderByOrderId:
         #              opertaionId: pipisaOrder
@@ -130,8 +218,7 @@ paths:
         #              description: >
         #                The `id` value returned in the response can be used
         405:
-          description: invalid input
-          content: { }
+          description: некорректный ввод
         401:
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -278,24 +365,29 @@ components:
       type: object
       properties:
         id:
+          description: уникальный ID Кластера (в формате UUIDv4)
           type: string
           format: uuid
+          readOnly: true
         datacenter:
+          description: массив строк с названиями ЦОДов, в кторых размещаются ноды Кластера
           type: array
           items:
             type: string
             enum: [ SKO, MCOD, AWS, GCR, Azure ]
         name:
+          description: имя Кластера
           type: string
-          readOnly: true
+#          readOnly: true
         security_zone:
           $ref: '#/components/schemas/SecurityZone'
         util_current:
+          description: текущая утилизация (вычисляемое значение)
           type: number
           readOnly: true
         util_total:
+          description: предел утилизации
           type: number
-          readOnly: true
 
     Order:
       type: object
@@ -303,6 +395,7 @@ components:
         id:
           type: string
           format: uuid
+          readOnly: true
         typeId:
           type: string
           readOnly: true
@@ -318,6 +411,7 @@ components:
           type: string
         serviceManagerId: # TODO: SM ID создаётся постфактум - нужно иметь возможность апдейтить со стороны API
           type: string
+          nullable: true
 
     # TODO: rip seczone for VIP
     # TODO: add qos key
@@ -401,8 +495,8 @@ components:
           readOnly: true
         name:
           type: string
-          readOnly: true
-          enum: [ eAZ, eBZ, eMZ, ePZ, eDZ ]
+#          readOnly: true
+#          enum: [ eAZ, eBZ, eMZ, ePZ, eDZ ]
 
   responses:
     UnauthorizedError:

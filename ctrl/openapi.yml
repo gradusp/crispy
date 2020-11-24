@@ -26,30 +26,63 @@ paths:
       summary: Создать Зону Безопасности
       operationId: addSecurityZone
       requestBody:
-        description: При передаче объекта с `name`, произойдёт создание новой записи в БД с автогенерацией _UUIDv4_ для `id`.
+        description: При передаче объекта с `name`, произойдёт создание новой записи в БД с автогенерацией `id`.
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/SecurityZone"
       responses:
         201:
-          description: ответ содержит результирующий объект
+          description: ответ с результирующим объектом
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SecurityZone"
         401:
           $ref: "#/components/responses/UnauthorizedError"
+        405:
+          description: некорректный ввод
+
     get:
       tags:
         - security-zones
       summary: Получить список всех Зон Безопасности
+#      description: Запрос возвращает все созданные ранее Зоны Безопасности.
       operationId: getSecurityZones
+      responses:
+        200:
+          description: массив объектов типа Зона Безопасности
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SecurityZone"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+
     put:
       tags:
         - security-zones
       summary: Обновить существующую Зону Безопасности
+#      description: aaa
       operationId: updateSecurityZone
+      requestBody:
+        description: aaa
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SecurityZone"
+      responses:
+        400:
+          description: указан неверный ID
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          description: Зона Безопасности не найдена
+        405:
+          description: некорректный ввод
+
   /clusters: # TODO: кластер балансировки t1 может не существовать в момент Заказа
     post:
       tags:
@@ -82,6 +115,8 @@ paths:
               description: >
                 The `id` value returned in the response can be used as
                 the `clusterId` parameter in `GET /clusters/{clusterId}`.
+        405:
+          description: Invalid input
     get:
       tags:
         - clusters
@@ -90,6 +125,7 @@ paths:
       tags:
         - clusters
       responses:
+
   /clusters/{clusterId}:
     get:
       tags:
@@ -492,7 +528,7 @@ components:
         id:
           type: string
           format: uuid
-          readOnly: true
+#          readOnly: true
         name:
           type: string
 #          readOnly: true

@@ -43,7 +43,7 @@ func (a *App) Run(port string) error {
 	}
 
 	// Init gin handler
-	router := gin.Default()
+	router := gin.New()
 	router.Use(gin.Recovery(), gin.Logger())
 
 	// Set up gin CORS official middleware

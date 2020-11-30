@@ -9,13 +9,7 @@ info:
   version: 'v1.0.0'
 tags:
   - name: security-zones
-    description: методы работы с Зонами Безопасности
-  - name: balancing-services
-    description: методы работы с Сервисами Балансировки
-  - name: clusters
-    description: методы работы с Кластерами
-  - name: orders
-    description: методы работы с Заказами
+    description: методы работы со справочником "Зоны Безопасности"
 servers:
   - url: http://localhost:8080/api/v1
 paths:
@@ -32,25 +26,26 @@ paths:
             schema:
               $ref: "#/components/schemas/SecurityZone"
       responses:
-        201:
+        "201":
           description: ответ с результирующим объектом
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SecurityZone"
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        405:
+        "303":
+          $ref: "#/components/responses/AlreadyExist"
+        "400":
           description: некорректный ввод
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
     get:
       tags:
         - security-zones
       summary: Получить список всех Зон Безопасности
-#      description: Запрос возвращает все созданные ранее Зоны Безопасности.
       operationId: getSecurityZones
       responses:
-        200:
+        "200":
           description: массив объектов типа Зона Безопасности
           content:
             application/json:
@@ -58,324 +53,79 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SecurityZone"
-        401:
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /security-zones/{securityZoneId}:
+    get:
+      tags:
+        - security-zones
+      summary: Получить объект Зона Безопасности, передав её ID
+      operationId: getSecurityZoneById
+      parameters:
+        - name: securityZoneId
+          in: path
+          description: ID Зоны Безопасности
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: объект типа Зона Безопасности
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityZone"
+
+        "401":
           $ref: "#/components/responses/UnauthorizedError"
 
     put:
       tags:
         - security-zones
-      summary: Обновить существующую Зону Безопасности
-#      description: aaa
+      summary: Создать Зону Безопасности
       operationId: updateSecurityZone
+      parameters:
+        - name: securityZoneId
+          in: path
+          description: ID Зоны Безопасности
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
-        description: aaa
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/SecurityZone"
       responses:
-        400:
-          description: указан неверный ID
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        404:
-          description: Зона Безопасности не найдена
-        405:
-          description: некорректный ввод
-
-  /clusters: # TODO: кластер балансировки t1 может не существовать в момент Заказа
-    post:
-      tags:
-        - clusters
-      summary: aa
-      operationId: addCluster
-      requestBody:
-        description: aa
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Cluster"
-      responses:
-        201:
-          description: Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                    description: ID созданного Кластера (в формате uuid)
-          links:
-            GetClusterByClusterId:
-              operationId: getClusterById
-              parameters:
-                clusterId: '$response.body#/id'
-              description: >
-                The `id` value returned in the response can be used as
-                the `clusterId` parameter in `GET /clusters/{clusterId}`.
-        405:
-          description: Invalid input
-    get:
-      tags:
-        - clusters
-      responses:
-    put:
-      tags:
-        - clusters
-      responses:
-
-  /clusters/{clusterId}:
-    get:
-      tags:
-        - clusters
-      summary: найти Кластер по ID
-      description: возвращает один Кластер
-      operationId: getClusterById
-      responses:
-    post:
-      tags:
-        - clusters
-      responses:
-    delete:
-      tags:
-        - clusters
-      responses:
-
-  /balancing-services:
-    put:
-      tags:
-        - balancing-services
-      summary: Обновить существующий Сервис Балансировки
-      requestBody:
-        description: Сервис Балансировки, который требуется обновить
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BalancingService'
-        required: true
-      responses:
-        400:
-          description: Invalid ID supplied
-          content: { }
-        404:
-          description: Сервис Балансировки не найден
-          content: { }
-        405:
-          description: Ошибка валидации
-          content: { }
-    post:
-      tags:
-        - balancing-services
-      summary: Создать новый Сервис Балансировки
-      requestBody:
-        # description:
-        content:
-          '*/*':
-            schema:
-              $ref: '#/components/schemas/BalancingService'
-      responses:
-        200:
+        "200":
           description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BalancingService'
-        400:
-          description: Invalid Order
           content: { }
-    get:
-      tags:
-        - balancing-services
-      summary: Получить список всех Сервисов Балансировки
-      responses:
-        default:
-          description: ааа
-          content: { }
-  /balancing-services/{bsId}:
-    get:
-      tags:
-        - balancing-services
-      summary: Найти Сервис Балансировки по ID
-      description: Возвращает один Сервис Балансировки
-      parameters:
-        - name: bsId
-          in: path
-          description: ID запрашиваемого Сервиса Балансировки
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BalancingService'
-        400:
-          description: invalid ID supplied
-          content: { }
-        404:
-          description: сервис балансировки не найден
-          content: { }
-
-  /orders:
-    post:
-      tags:
-        - orders
-      summary: создать Заказ
-      operationId: addOrder
-      requestBody:
-        description: объект Заказа, который следует добавить
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Order"
-        required: true
-      responses:
-        201:
-          description: Created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                    description: ID созданного Заказа (в формате uuid)
-        #          links:
-        #            GetOrderByOrderId:
-        #              opertaionId: pipisaOrder
-        #              parameters:
-        #                pipisa: "$response.body#/id"
-        #              description: >
-        #                The `id` value returned in the response can be used
-        405:
+        "400":
           description: некорректный ввод
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
+          content: { }
 
-    get:
-      tags:
-        - orders
-      summary: получить список всех Заказов
-      description: aaa
-      operationId: getOrders
-      responses:
-        200:
-          description: массив Заказов
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Order"
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-
-    put:
-      tags:
-        - orders
-      summary: обновить существующий Заказ
-      operationId: updateOrder
-      requestBody:
-        description: объект Заказа, который требуется обновить
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Order"
-        required: true
-      responses:
-        400:
-          description: указан неверный ID
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        404:
-          description: Заказ не найден
-        405:
-          description: ошибка валидации
-
-  /orders/{orderId}:
-    get:
-      tags:
-        - orders
-      summary: найти Заказ по ID
-      description: Возвращает единственный Заказ
-      operationId: getOrderById
-      parameters:
-        - name: orderId
-          in: path
-          description: aa
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        200:
-          description: успешная операция
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Order"
-        400:
-          description: указан неверный ID
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        404:
-          description: Заказ не найден
-    post:
-      tags:
-        - orders
-      summary: обновить Заказ через даные формы
-      description: Для Заказа с `{orderId}` обновляются данные, переданные в `application/x-www-form-urlencoded`
-      operationId: updateOrderWithForm
-      parameters:
-        - name: orderId
-          in: path
-          description: bb
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              properties:
-                name:
-                  type: string
-                  description: bb
-                status:
-                  type: string
-                  description: bb
-      responses:
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        405:
-          description: некорректный ввод
     delete:
       tags:
-        - orders
-      summary: удалить Заказ
-      operationId: deleteOrder
+        - security-zones
+      summary: Удалить Зону Безопасности
+      operationId: deleteSecurityZone
       parameters:
-        - name: orderId
+        - name: securityZoneId
           in: path
-          description: ID Заказ для удаления
+          description: ID Зоны Безопасности
           required: true
           schema:
             type: string
             format: uuid
       responses:
-        400:
-          description: указан неверный ID
-        401:
-          $ref: "#/components/responses/UnauthorizedError"
-        404:
-          description: Заказ не найден
+        "204":
+          description: контента нет
+          content: { }
+        "400":
+          description: некорректный ввод
 
 components:
   schemas:
@@ -414,7 +164,7 @@ components:
         name:
           description: имя Кластера
           type: string
-#          readOnly: true
+        #          readOnly: true
         security_zone:
           $ref: '#/components/schemas/SecurityZone'
         util_current:
@@ -528,11 +278,9 @@ components:
         id:
           type: string
           format: uuid
-#          readOnly: true
+          readOnly: true
         name:
           type: string
-#          readOnly: true
-#          enum: [ eAZ, eBZ, eMZ, ePZ, eDZ ]
 
   responses:
     UnauthorizedError:
@@ -540,6 +288,14 @@ components:
       headers:
         LBOS_API_KEY:
           description: auth header
+          schema:
+            type: string
+    AlreadyExist:
+      description: объект уже существует
+      headers:
+        Location:
+          description: redirect location
+          example: asd
           schema:
             type: string
 

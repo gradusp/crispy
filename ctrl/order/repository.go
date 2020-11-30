@@ -2,11 +2,11 @@ package order
 
 import (
 	"context"
-	"github.com/gradusp/crispy/ctrl/models"
+	"github.com/gradusp/crispy/ctrl/model"
 )
 
 type Repository interface {
-	CreateOrder(ctx context.Context, bs *models.BalancingService, user *models.Order) error
-	GetOrders(ctx context.Context) ([]*models.Order, error)
+	CreateOrder(ctx context.Context, bs *model.BalancingService, user *model.Order) error
+	GetOrders(ctx context.Context) ([]*model.Order, error)
 	DeleteOrder(ctx context.Context, id string) error
 }

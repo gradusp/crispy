@@ -1,6 +1,6 @@
-package models
+package model
 
-type HealthcheckConfig struct {
+type Healthcheck struct {
 	HealthcheckID       string
 	BalancingServiceID  string
 	HealthcheckConfigID string

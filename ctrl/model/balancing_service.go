@@ -1,4 +1,4 @@
-package models
+package model
 
 type BalancingService struct {
 	BalancingServiceID string

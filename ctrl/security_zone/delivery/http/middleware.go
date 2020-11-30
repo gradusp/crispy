@@ -3,7 +3,6 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gradusp/crispy/ctrl/secrets"
-	"log"
 	"net/http"
 )
 
@@ -18,7 +17,7 @@ func AuthAPIKey(secretId string) gin.HandlerFunc {
 
 		secret, err := secrets.GetSecret(secretId)
 		if err != nil {
-			log.Println("failed to get secret")
+			//log.Println("failed to get secret") // TODO: implement in core logger
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"code":    http.StatusUnauthorized,
 				"message": http.StatusText(http.StatusUnauthorized),
@@ -26,10 +25,10 @@ func AuthAPIKey(secretId string) gin.HandlerFunc {
 			return
 		}
 
-		log.Println("comparing secret with provided key", secret, key)
+		//log.Println("comparing secret with provided key", secret, key) // TODO: implement in core logger
 
 		if secret != key {
-			log.Println("key doesn't match!")
+			//log.Println("key doesn't match!") // TODO: implement in core logger
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"code":    http.StatusUnauthorized,
 				"message": http.StatusText(http.StatusUnauthorized),
@@ -37,7 +36,7 @@ func AuthAPIKey(secretId string) gin.HandlerFunc {
 			return
 		}
 
-		log.Println("no error during check")
+		//log.Println("no error during check") // TODO: implement in core logger
 		c.Next()
 	}
 }

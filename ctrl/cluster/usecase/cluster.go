@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"github.com/gradusp/crispy/ctrl/cluster"
 	"github.com/gradusp/crispy/ctrl/model"
 )
@@ -17,11 +16,12 @@ func NewClusterUsecase(clusterRepo cluster.Repository) *ClusterUsecase {
 	}
 }
 
-func (cuc ClusterUsecase) Create(ctx context.Context, sz *model.SecurityZone, name string, cap int64) (*model.Cluster, error) {
+// TODO: usecase should accept only raw params and wrap it to models for repo?
+func (cuc ClusterUsecase) Create(ctx context.Context, sz *model.SecurityZone, name string, capacity int64) (*model.Cluster, error) {
 	c := &model.Cluster{
-		Name: name,
+		Name:     name,
+		Capacity: capacity,
 	}
-	fmt.Printf("CLUSTER_USECASE:24: %+v\n", c)
 
 	return cuc.clusterRepo.Create(ctx, sz, c)
 }

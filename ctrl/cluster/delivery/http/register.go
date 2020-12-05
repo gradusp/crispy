@@ -11,5 +11,9 @@ func RegisterHTTPEndpoint(router *gin.RouterGroup, uc cluster.Usecase) {
 	clusters := router.Group("/clusters")
 	{
 		clusters.POST("", h.Create)
+		clusters.GET("", h.Get)
+		clusters.GET("/:id", h.GetByID)
+		clusters.PUT("/:id", h.Update)
+		clusters.DELETE("/:id", h.Delete)
 	}
 }

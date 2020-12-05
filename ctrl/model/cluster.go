@@ -6,7 +6,7 @@ type Cluster struct {
 	Capacity       int64         `json:"capacity" pg:"capacity"`
 	Usage          int64         `json:"usage" pg:"usage"`
 	SecurityZoneID string        `json:"securityZoneId" pg:"security_zone_id"`
-	SecurityZone   *SecurityZone `json:"securityZone" pg:"rel:has-one"`
+	SecurityZone   *SecurityZone `json:"securityZone,omitempty" pg:"rel:has-one"`
 }
 
 // https://pkg.go.dev/github.com/go-pg/pg/v10#example-DB.Model-HasOne

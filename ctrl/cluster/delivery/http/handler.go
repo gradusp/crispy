@@ -21,16 +21,7 @@ func NewHandler(uc cluster.Usecase) *Handler {
 type request struct {
 	Name           string `json:"name" binding:"required"`
 	SecurityZoneID string `json:"securityZoneId" binding:"required"`
-	Capacity       int64  `json:"capacity"`
-	//SecurityZone *model.SecurityZone `json:"securityZone"`
-}
-
-type response struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	SecurityZoneID string `json:"securityZoneId"`
-	Capacity       int64  `json:"capacity"`
-	Usage          int64  `json:"usage"`
+	Capacity       int64  `json:"capacity" binding:"required"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -57,13 +48,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, &response{
-		ID:             res.ID,
-		Name:           res.Name,
-		SecurityZoneID: res.SecurityZoneID,
-		Capacity:       res.Capacity,
-		Usage:          res.Usage,
-	})
+	c.JSON(http.StatusCreated, res)
 }
 
 func (h *Handler) Get(c *gin.Context) {
@@ -76,4 +61,66 @@ func (h *Handler) Get(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) GetByID(c *gin.Context) {
+	res, err := h.usecase.GetByID(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *Handler) Update(c *gin.Context) {
+	var req request
+	if err := c.BindJSON(&req); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"code":    http.StatusBadRequest,
+			"message": http.StatusText(http.StatusBadRequest),
+		})
+		return
+	}
+
+	err := h.usecase.Update(c.Request.Context(), req.SecurityZoneID, c.Param("id"), req.Name, req.Capacity)
+	if err != nil {
+		if errors.Is(err, cluster.ErrRequestedSecZoneNotFound) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"code":    http.StatusBadRequest,
+				"message": http.StatusText(http.StatusBadRequest),
+				"note":    cluster.ErrRequestedSecZoneNotFound.Error(),
+			})
+			return
+		}
+		if errors.Is(err, cluster.ErrClusterAlreadyExist) {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"code":    http.StatusBadRequest,
+				"message": http.StatusText(http.StatusBadRequest),
+				"note":    cluster.ErrClusterAlreadyExist.Error(),
+			})
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (h *Handler) Delete(c *gin.Context) {
+	err := h.usecase.Delete(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		fmt.Println("CLUSTER_HANDLER:118:", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	c.Status(http.StatusNoContent)
 }

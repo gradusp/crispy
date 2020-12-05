@@ -68,18 +68,6 @@ func (h *Handler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-func (h *Handler) GetByID(c *gin.Context) {
-	res, err := h.usecase.GetByID(c.Request.Context(), c.Param("id"))
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": http.StatusText(http.StatusInternalServerError),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, res)
-}
-
 func (h *Handler) Update(c *gin.Context) { // TODO: IMPLEMENT UPDATE FOR REAL
 	var req szInput
 	if err := c.BindJSON(&req); err != nil {

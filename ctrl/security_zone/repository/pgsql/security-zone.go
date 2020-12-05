@@ -65,13 +65,8 @@ func (szr *SecurityZoneRepo) Get(ctx context.Context) ([]*model.SecurityZone, er
 	return r, err
 }
 
-func (szr *SecurityZoneRepo) GetByID(ctx context.Context, sz *model.SecurityZone) (*model.SecurityZone, error) {
-	err := szr.db.Model(sz).Where("id = ?", sz.ID).Select()
-
-	return sz, err
-}
-
 func (szr *SecurityZoneRepo) Update(ctx context.Context, sz *model.SecurityZone) error {
+	// TODO: error case `name already exist` (name is unique in db)
 	_, err := szr.db.Model(sz).Where("id = ?", sz.ID).Update()
 
 	return err

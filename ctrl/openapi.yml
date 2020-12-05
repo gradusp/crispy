@@ -85,30 +85,6 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
 
   /security-zones/{securityZoneId}:
-    get:
-      tags:
-        - dictionaries
-      summary: Получить объект Зона Безопасности, передав её ID
-      operationId: getSecurityZoneById
-      parameters:
-        - name: securityZoneId
-          in: path
-          description: ID Зоны Безопасности
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: объект типа Зона Безопасности
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SecurityZone"
-
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
     put:
       tags:
         - dictionaries

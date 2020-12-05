@@ -28,14 +28,6 @@ func (szuc SecurityZoneUsecase) Get(ctx context.Context) ([]*model.SecurityZone,
 	return szuc.securityZoneRepo.Get(ctx)
 }
 
-func (szuc SecurityZoneUsecase) GetByID(ctx context.Context, id string) (*model.SecurityZone, error) {
-	sz := &model.SecurityZone{
-		ID: id,
-	}
-
-	return szuc.securityZoneRepo.GetByID(ctx, sz)
-}
-
 func (szuc SecurityZoneUsecase) Update(ctx context.Context, id, name string) error {
 	sz := &model.SecurityZone{
 		ID:   id,

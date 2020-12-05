@@ -5,16 +5,23 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg/v10"
+	"github.com/gradusp/crispy/ctrl/cluster"
 	"github.com/gradusp/crispy/ctrl/security_zone"
+	"github.com/hashicorp/consul/api"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	chttp "github.com/gradusp/crispy/ctrl/cluster/delivery/http"
+	cpg "github.com/gradusp/crispy/ctrl/cluster/repository/pgsql"
+	cuc "github.com/gradusp/crispy/ctrl/cluster/usecase"
 
 	szhttp "github.com/gradusp/crispy/ctrl/security_zone/delivery/http"
 	szpg "github.com/gradusp/crispy/ctrl/security_zone/repository/pgsql"
@@ -24,24 +31,28 @@ import (
 type App struct {
 	httpServer *http.Server
 
+	clusterUC      cluster.Usecase
 	securityZoneUC security_zone.Usecase
 }
 
 func NewApp() *App {
-	db := initDB()
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("No .env file found", err)
+	}
 
-	securityZoneRepo := szpg.NewSecurityZoneRepo(db)
+	db := initDB()
+	kv := initConsul()
+
+	clusterRepo := cpg.NewClusterRepo(db, kv)
+	securityZoneRepo := szpg.NewSecurityZoneRepo(db, kv)
 
 	return &App{
+		clusterUC:      cuc.NewClusterUsecase(clusterRepo),
 		securityZoneUC: szusecase.NewSecurityZoneUseCase(securityZoneRepo),
 	}
 }
 
 func (a *App) Run(port string) error {
-	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
-	}
-
 	// Init gin handler
 	router := gin.New()
 	router.Use(gin.Recovery(), gin.Logger())
@@ -62,6 +73,7 @@ func (a *App) Run(port string) error {
 	api := router.Group("/api/v1")
 	api.Use(szhttp.AuthAPIKey("LBOS_API_KEY")) // FIXME: current LBOS_API_KEY flow is wrong
 
+	chttp.RegisterHTTPEndpoint(api, a.clusterUC)
 	szhttp.RegisterHTTPEndpoint(api, a.securityZoneUC)
 
 	// HTTP Server
@@ -91,13 +103,26 @@ func (a *App) Run(port string) error {
 }
 
 func initDB() *pg.DB {
+	addr := fmt.Sprintf("%s:%s", os.Getenv("LBOS_DB_HOST"), os.Getenv("LBOS_DB_PORT"))
 	db := pg.Connect(&pg.Options{
 		ApplicationName: "lbosCtrl",
-		Database:        "postgres",
-		User:            "postgres",
-		Password:        "secret",
+		Addr:            addr,
+		Database:        os.Getenv("LBOS_DB_USER"),
+		User:            os.Getenv("LBOS_DB_USER"),
+		Password:        os.Getenv("LBOS_DB_PASS"),
 	})
-	//defer db.Close()
 
 	return db
+}
+
+func initConsul() *api.KV {
+	cfg := &api.Config{
+		Address: "10.56.204.194:18500",
+	}
+	client, err := api.NewClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	return client.KV()
 }

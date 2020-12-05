@@ -4,14 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gradusp/crispy/ctrl/model"
 	"github.com/gradusp/crispy/ctrl/security_zone"
 	"net/http"
 )
-
-type SecurityZone struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
 
 type Handler struct {
 	usecase security_zone.Usecase
@@ -54,7 +50,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, &SecurityZone{
+	c.JSON(http.StatusCreated, &model.SecurityZone{
 		ID:   res.ID,
 		Name: res.Name,
 	})

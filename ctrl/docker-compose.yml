@@ -19,30 +19,9 @@ services:
       - ./openapi.yml:/app/openapi.yml
 
   db:
-    image: postgres:13-alpine
+    image: postgres:10-alpine
     restart: always
     ports:
       - 5432:5432
     environment:
       POSTGRES_PASSWORD: secret
-
-  etcd:
-    image: quay.io/coreos/etcd
-    restart: always
-    ports:
-      - 2379:2379
-      - 2380:2380
-    command:
-      - /usr/local/bin/etcd
-      - --data-dir=/etcd-data
-      - --name=node1
-      - --initial-advertise-peer-urls=http://192.168.2.5:2380
-      - --listen-peer-urls=http://0.0.0.0:2380
-      - --advertise-client-urls=http://192.168.2.5:2379
-      - --listen-client-urls=http://0.0.0.0:2379
-      - --initial-cluster=node1=http://192.168.2.5:2380
-
-  ek:
-    image: evildecay/etcdkeeper
-    ports:
-      - 8081:8080

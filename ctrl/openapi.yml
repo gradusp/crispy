@@ -10,8 +10,8 @@ info:
 tags:
   - name: clusters
     description: методы работы с Кластерами Балансировки
-  - name: dictionaries
-    description: методы работы со справочниками
+  - name: security-zones
+    description: методы работы с Зонами Безопасности
 #  - name: balancing-services
 #    description: методы работы с Сервисами Балансировки
 #  - name: clusters
@@ -25,7 +25,7 @@ paths:
     post:
       tags:
         - clusters
-      summary: Создать Кластер Балансировки
+      summary: создать Кластер Балансировки
       operationId: addCluster
       requestBody:
         description: При передаче JSON объекта c `name` и `securityZoneId`, произойдёт создание новой записи в БД с аавтогенерацией `id`.
@@ -43,8 +43,8 @@ paths:
   /security-zones:
     post:
       tags:
-        - dictionaries
-      summary: Создать Зону Безопасности
+        - security-zones
+      summary: создать Зону Безопасности
       operationId: addSecurityZone
       requestBody:
         description: При передаче JSON объекта с `name`, произойдёт создание новой записи в БД с автогенерацией `id`.
@@ -68,8 +68,8 @@ paths:
 
     get:
       tags:
-        - dictionaries
-      summary: Получить список всех Зон Безопасности
+        - security-zones
+      summary: получить список всех Зон Безопасности
       #      description: Запрос возвращает все созданные ранее Зоны Безопасности.
       operationId: getSecurityZones
       responses:
@@ -87,8 +87,8 @@ paths:
   /security-zones/{securityZoneId}:
     put:
       tags:
-        - dictionaries
-      summary: Создать Зону Безопасности
+        - security-zones
+      summary: обновить Зону Безопасности
       operationId: updateSecurityZone
       parameters:
         - name: securityZoneId
@@ -114,8 +114,8 @@ paths:
 
     delete:
       tags:
-        - dictionaries
-      summary: Удалить Зону Безопасности
+        - security-zones
+      summary: удалить Зону Безопасности
       operationId: deleteSecurityZone
       parameters:
         - name: securityZoneId

@@ -30,6 +30,7 @@ func (szr *SecurityZoneRepo) Create(ctx context.Context, sz *model.SecurityZone)
 	if err != nil {
 		panic(err)
 	} else if r {
+		// FIXME: sloppyReassign
 		if err = szr.db.Model(sz).Where("name = ?", sz.Name).Select(); err != nil {
 			return nil, err
 		}
@@ -41,6 +42,7 @@ func (szr *SecurityZoneRepo) Create(ctx context.Context, sz *model.SecurityZone)
 		return nil, err
 	}
 
+	// FIXME: sloppyReassign
 	if err = szr.db.Model(sz).Where("name = ?", sz.Name).Select(); err != nil {
 		return nil, err
 	}
@@ -69,7 +71,7 @@ func (szr *SecurityZoneRepo) GetByID(ctx context.Context, sz *model.SecurityZone
 }
 
 func (szr *SecurityZoneRepo) Update(ctx context.Context, sz *model.SecurityZone) error {
-	// TODO: error case `name already exist` (name is unique in db)
+	// FIXME: error case `name already exist` (name is unique in db)
 	_, err := szr.db.Model(sz).Where("id = ?", sz.ID).Update()
 	return err
 }

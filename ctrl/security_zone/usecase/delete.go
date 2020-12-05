@@ -7,7 +7,7 @@ import (
 
 func (szuc SecurityZoneUsecase) Delete(ctx context.Context, id string) error {
 	sz := &model.SecurityZone{
-		ID:   id,
+		ID: id,
 	}
 
 	return szuc.securityZoneRepo.Delete(ctx, sz)

@@ -17,7 +17,11 @@ func NewClusterUsecase(clusterRepo cluster.Repository) *ClusterUsecase {
 }
 
 // TODO: usecase should accept only raw params and wrap it to models for repo?
-func (cuc ClusterUsecase) Create(ctx context.Context, sz *model.SecurityZone, name string, capacity int64) (*model.Cluster, error) {
+func (cuc ClusterUsecase) Create(ctx context.Context, szid, name string, capacity int64) (*model.Cluster, error) {
+	sz := &model.SecurityZone{
+		ID: szid,
+	}
+
 	c := &model.Cluster{
 		Name:     name,
 		Capacity: capacity,

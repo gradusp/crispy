@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gradusp/crispy/ctrl/cluster"
-	"github.com/gradusp/crispy/ctrl/model"
 	"net/http"
 )
 
@@ -43,11 +42,7 @@ func (h *Handler) Create(c *gin.Context) {
 		})
 	}
 
-	sz := &model.SecurityZone{
-		ID: req.SecurityZoneID,
-	}
-
-	res, err := h.usecase.Create(c.Request.Context(), sz, req.Name, req.Capacity)
+	res, err := h.usecase.Create(c.Request.Context(), req.SecurityZoneID, req.Name, req.Capacity)
 	if err != nil {
 		if errors.Is(err, cluster.ErrClusterAlreadyExist) {
 			loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
@@ -69,4 +64,16 @@ func (h *Handler) Create(c *gin.Context) {
 		Capacity:       res.Capacity,
 		Usage:          res.Usage,
 	})
+}
+
+func (h *Handler) Get(c *gin.Context) {
+	res, err := h.usecase.Get(c.Request.Context())
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"code":    http.StatusInternalServerError,
+			"message": http.StatusText(http.StatusInternalServerError),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, res)
 }

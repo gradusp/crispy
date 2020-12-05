@@ -1,11 +1,9 @@
 package model
 
-import "net"
-
-type Vip struct {
-	VipID          string
-	SecurityZoneID int
-	proto          string
-	addr           net.IPAddr
-	port           int
-}
+//type Vip struct {
+//	VipID          string
+//	SecurityZoneID int
+//	proto          string
+//	addr           net.IPAddr
+//	port           int
+//}

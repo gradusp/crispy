@@ -6,7 +6,8 @@ import (
 )
 
 type Usecase interface {
-	Create(ctx context.Context, sz *model.SecurityZone, name string, cap int64) (*model.Cluster, error)
+	// TODO: usecase should accept only raw params and wrap it to models for repo?
+	Create(ctx context.Context, sz *model.SecurityZone, name string, capacity int64) (*model.Cluster, error)
 
 	Get(ctx context.Context) ([]*model.Cluster, error)
 	//GetByID(ctx context.Context, id string) (*model.Cluster, error)

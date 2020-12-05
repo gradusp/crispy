@@ -26,6 +26,7 @@ type ClusterRepo struct {
 
 func (cr *ClusterRepo) Create(ctx context.Context, sz *model.SecurityZone, c *model.Cluster) (*model.Cluster, error) {
 	// TODO: missing trace logs here
+	// TODO: error case `invalid security_zone_id`
 
 	// Request SecurityZone from DB
 	err := cr.db.Model(sz).WherePK().Select()

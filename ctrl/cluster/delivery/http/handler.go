@@ -2,6 +2,7 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gradusp/crispy/ctrl/cluster"
 	"github.com/gradusp/crispy/ctrl/model"
@@ -45,13 +46,12 @@ func (h *Handler) Create(c *gin.Context) {
 	sz := &model.SecurityZone{
 		ID: req.SecurityZoneID,
 	}
-	//fmt.Printf("HANDLERS:36: %+v\n ", sz)
 
 	res, err := h.usecase.Create(c.Request.Context(), sz, req.Name, req.Capacity)
 	if err != nil {
 		if errors.Is(err, cluster.ErrClusterAlreadyExist) {
-			//loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
-			//c.Header("Location", loc)
+			loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
+			c.Header("Location", loc)
 			c.AbortWithStatus(http.StatusSeeOther)
 			return
 		}

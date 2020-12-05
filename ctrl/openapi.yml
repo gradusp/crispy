@@ -85,6 +85,29 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
 
   /security-zones/{securityZoneId}:
+    get:
+      tags:
+        - security-zones
+      summary: получить Зону Безопасности
+      operationId: getSecurityZoneById
+      parameters:
+        - name: securityZoneId
+          in: path
+          description: ID Зоны Безопасности
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: объект типа Зона Безопасности
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SecurityZone"
+
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
     put:
       tags:
         - security-zones
@@ -431,6 +454,37 @@ paths:
 
 components:
   schemas:
+    Cluster:
+      type: object
+      properties:
+        id:
+          description: уникальный ID Кластера
+          type: string
+          format: uuid
+          readOnly: true
+        #        datacenter:
+        #          description: массив строк с названиями ЦОДов, в кторых размещаются ноды Кластера
+        #          type: array
+        #          items:
+        #            type: string
+        #            enum: [ SKO, MCOD, AWS, GCR, Azure ]
+        name:
+          description: имя Кластера
+          required: true
+          type: string
+        securityZoneId:
+          description: ID Зоны Безопасности
+          required: true
+          type: string
+          format: uuid
+        capacity:
+          description: предел утилизации
+          required: true
+          type: number
+        usage:
+          description: текущая утилизация (вычисляемое значение)
+          type: number
+          readOnly: true
 #    BalancingService:
 #      required:
 #        - something
@@ -448,39 +502,6 @@ components:
 #          type: array
 #          items:
 #            $ref: '#/components/schemas/Vip'
-
-    Cluster:
-      type: object
-      properties:
-        id:
-          description: уникальный ID Кластера (в формате UUIDv4)
-          type: string
-          format: uuid
-          readOnly: true
-#        datacenter:
-#          description: массив строк с названиями ЦОДов, в кторых размещаются ноды Кластера
-#          type: array
-#          items:
-#            type: string
-#            enum: [ SKO, MCOD, AWS, GCR, Azure ]
-        name:
-          description: имя Кластера
-          required: true
-          type: string
-        #          readOnly: true
-        securityZoneId:
-          description: ID Зоны Безопасности
-          required: true
-          type: string
-          format: uuid
-        capacity:
-          description: предел утилизации
-          required: true
-          type: number
-        usage:
-          description: текущая утилизация (вычисляемое значение)
-          type: number
-          readOnly: true
 
 #    Order:
 #      type: object

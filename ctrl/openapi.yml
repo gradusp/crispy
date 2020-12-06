@@ -40,6 +40,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Cluster"
+        "303":
+          $ref: "#/components/responses/AlreadyExist"
+        "400":
+          description: некорректный ввод
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    get:
+      tags:
+        - clusters
+      summary: получить списоке всех Кластеров Балансировки
+      operationId: getCluster
+      responses:
+        "200":
+          description: массив объектов типа Кластер Балансировки
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cluster"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  /clusters/{clusterId}:
+    get:
+      tags:
+        - clusters
+      summary: получить Кластер Балансировки
+      operationId: getClusterById
+      parameters:
+        - name: clusterId
+          in: path
+          description: ID Кластера Балансировки
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: объект типа Кластер Балансировки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    put:
+      tags:
+        - clusters
+      summary: обновить Кластер Балансировки
+      operationId: updateCluster
+      parameters:
+        - name: clusterId
+          in: path
+          description: ID Кластера Балансировки
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Cluster"
+      responses:
+        "200":
+          description: OK
+          content: { }
+        "400":
+          description: некорректный ввод
+          content: { }
+    delete:
+      tags:
+        - clusters
+      summary: удалить Кластер Балансировки
+      operationId: deleteCluster
+      parameters:
+        - name: clusterId
+          in: path
+          description: ID Кластера Балансировки
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: контента нет
+          content: { }
+        "400":
+          description: некорректный ввод
+          content: { }
   /security-zones:
     post:
       tags:
@@ -105,7 +195,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SecurityZone"
-
         "401":
           $ref: "#/components/responses/UnauthorizedError"
     put:

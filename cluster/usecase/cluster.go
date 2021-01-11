@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"github.com/gradusp/crispy/ctrl/cluster"
+	"github.com/gradusp/crispy/cluster"
 )
 
 type ClusterUsecase struct {

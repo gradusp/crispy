@@ -1,6 +1,6 @@
-module github.com/gradusp/crispy/ctrl
+module github.com/gradusp/crispy
 
-go 1.15
+go 1.16
 
 require (
 	github.com/gin-contrib/cors v1.3.1

@@ -2,7 +2,8 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/gradusp/crispy/ctrl/cluster"
+
+	"github.com/gradusp/crispy/cluster"
 )
 
 func RegisterHTTPEndpoint(router *gin.RouterGroup, uc cluster.Usecase) {

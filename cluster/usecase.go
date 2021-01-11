@@ -2,7 +2,8 @@ package cluster
 
 import (
 	"context"
-	"github.com/gradusp/crispy/ctrl/model"
+
+	"github.com/gradusp/crispy/model"
 )
 
 type Usecase interface {

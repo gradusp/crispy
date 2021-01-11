@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/gradusp/crispy/ctrl/model"
-	"github.com/gradusp/crispy/ctrl/securityzone"
+	"github.com/gradusp/crispy/model"
+	"github.com/gradusp/crispy/securityzone"
 )
 
 type Handler struct {

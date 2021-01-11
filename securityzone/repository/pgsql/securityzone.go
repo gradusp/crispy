@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
 
-	"github.com/gradusp/crispy/ctrl/model"
-	"github.com/gradusp/crispy/ctrl/securityzone"
+	"github.com/gradusp/crispy/model"
+	"github.com/gradusp/crispy/securityzone"
 )
 
 func NewSecurityzoneRepo(db *pg.DB, kv *api.KV, l *zap.SugaredLogger) *SecurityzonePostgresRepo {

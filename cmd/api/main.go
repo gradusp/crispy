@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/gradusp/crispy/ctrl/server"
+	"github.com/gradusp/crispy/server"
 )
 
 func main() {

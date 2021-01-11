@@ -2,7 +2,8 @@ package usecase
 
 import (
 	"context"
-	"github.com/gradusp/crispy/ctrl/model"
+
+	"github.com/gradusp/crispy/model"
 )
 
 func (cuc ClusterUsecase) Delete(ctx context.Context, id string) error {

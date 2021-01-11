@@ -3,9 +3,11 @@ package http
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/gradusp/crispy/ctrl/cluster"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/gradusp/crispy/cluster"
 )
 
 type Handler struct {

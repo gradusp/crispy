@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/gradusp/crispy/ctrl/balancingservice"
-	"github.com/gradusp/crispy/ctrl/model"
+	"github.com/gradusp/crispy/balancingservice"
+	"github.com/gradusp/crispy/model"
 )
 
 type BalancingserviceUsecase struct {

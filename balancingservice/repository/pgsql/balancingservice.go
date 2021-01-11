@@ -2,11 +2,13 @@ package pgsql
 
 import (
 	"context"
+
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
-	"github.com/gradusp/crispy/ctrl/model"
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
+
+	"github.com/gradusp/crispy/model"
 )
 
 type BalancingserviceRepo struct {

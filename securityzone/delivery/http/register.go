@@ -2,7 +2,8 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/gradusp/crispy/ctrl/securityzone"
+
+	"github.com/gradusp/crispy/securityzone"
 )
 
 func RegisterHTTPEndpoint(router *gin.RouterGroup, uc securityzone.Usecase) {

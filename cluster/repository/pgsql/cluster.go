@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
 
-	"github.com/gradusp/crispy/ctrl/cluster"
-	"github.com/gradusp/crispy/ctrl/model"
+	"github.com/gradusp/crispy/cluster"
+	"github.com/gradusp/crispy/model"
 )
 
 func NewClusterRepo(db *pg.DB, kv *api.KV, l *zap.SugaredLogger) *ClusterRepo {

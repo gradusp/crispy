@@ -13,7 +13,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gradusp/crispy/ctrl/swagger"
+	"github.com/gradusp/crispy/swagger"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -22,33 +22,32 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
-	"github.com/gradusp/crispy/ctrl/balancingservice"
-	"github.com/gradusp/crispy/ctrl/cluster"
-	"github.com/gradusp/crispy/ctrl/order"
-	"github.com/gradusp/crispy/ctrl/securityzone"
+	"github.com/gradusp/crispy/balancingservice"
+	"github.com/gradusp/crispy/cluster"
+	"github.com/gradusp/crispy/securityzone"
 
-	szhttp "github.com/gradusp/crispy/ctrl/securityzone/delivery/http"
-	szpg "github.com/gradusp/crispy/ctrl/securityzone/repository/pgsql"
-	szusecase "github.com/gradusp/crispy/ctrl/securityzone/usecase"
+	szhttp "github.com/gradusp/crispy/securityzone/delivery/http"
+	szpg "github.com/gradusp/crispy/securityzone/repository/pgsql"
+	szusecase "github.com/gradusp/crispy/securityzone/usecase"
 
-	chttp "github.com/gradusp/crispy/ctrl/cluster/delivery/http"
-	cpg "github.com/gradusp/crispy/ctrl/cluster/repository/pgsql"
-	cuc "github.com/gradusp/crispy/ctrl/cluster/usecase"
+	chttp "github.com/gradusp/crispy/cluster/delivery/http"
+	cpg "github.com/gradusp/crispy/cluster/repository/pgsql"
+	cuc "github.com/gradusp/crispy/cluster/usecase"
 
-	ohttp "github.com/gradusp/crispy/ctrl/order/delivery/http"
-	opg "github.com/gradusp/crispy/ctrl/order/repository/pgsql"
-	ouc "github.com/gradusp/crispy/ctrl/order/usecase"
+	//ohttp "github.com/gradusp/crispy/order/delivery/http"
+	//opg "github.com/gradusp/crispy/order/repository/pgsql"
+	//ouc "github.com/gradusp/crispy/order/usecase"
 
-	bspg "github.com/gradusp/crispy/ctrl/balancingservice/repository/pgsql"
-	bsuc "github.com/gradusp/crispy/ctrl/balancingservice/usecase"
+	bspg "github.com/gradusp/crispy/balancingservice/repository/pgsql"
+	bsuc "github.com/gradusp/crispy/balancingservice/usecase"
 )
 
 type App struct {
 	httpServer *http.Server
 
-	securityZoneUC     securityzone.Usecase
-	clusterUC          cluster.Usecase
-	orderUC            order.Usecase
+	securityZoneUC securityzone.Usecase
+	clusterUC      cluster.Usecase
+	//orderUC            order.Usecase
 	balancingserviceUC balancingservice.Usecase
 }
 
@@ -66,13 +65,13 @@ func NewApp() *App {
 
 	securityZoneRepo := szpg.NewSecurityzoneRepo(db, kv, l.Sugar())
 	clusterRepo := cpg.NewClusterRepo(db, kv, l.Sugar())
-	orderRepo := opg.NewOrderRepo(db, kv, l.Sugar())
+	//orderRepo := opg.NewOrderRepo(db, kv, l.Sugar())
 	balancingserviceRepo := bspg.NewBalancingserviceRepo(db, kv, l.Sugar())
 
 	return &App{
-		clusterUC:          cuc.NewClusterUsecase(clusterRepo),
-		securityZoneUC:     szusecase.NewSecurityZoneUseCase(securityZoneRepo),
-		orderUC:            ouc.NewOrderUsecase(orderRepo),
+		clusterUC:      cuc.NewClusterUsecase(clusterRepo),
+		securityZoneUC: szusecase.NewSecurityZoneUseCase(securityZoneRepo),
+		//orderUC:            ouc.NewOrderUsecase(orderRepo),
 		balancingserviceUC: bsuc.NewBalancingserviceUsecase(balancingserviceRepo),
 	}
 }
@@ -116,7 +115,7 @@ func (a *App) Run(port string) error {
 
 	szhttp.RegisterHTTPEndpoint(rapi, a.securityZoneUC)
 	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC)
-	ohttp.RegisterHTTPEndpoint(rapi, a.orderUC, a.balancingserviceUC) // FIXME: figure out why two UC here?
+	//ohttp.RegisterHTTPEndpoint(rapi, a.orderUC, a.balancingserviceUC) // FIXME: figure out why two UC here?
 
 	// HTTP Server
 	a.httpServer = &http.Server{

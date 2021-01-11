@@ -2,8 +2,9 @@ package balancingservice
 
 import (
 	"context"
-	"github.com/gradusp/crispy/ctrl/model"
 	"net"
+
+	"github.com/gradusp/crispy/model"
 )
 
 type Usecase interface {

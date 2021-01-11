@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"github.com/gradusp/crispy/ctrl/securityzone"
+	"github.com/gradusp/crispy/securityzone"
 )
 
 type SecurityZoneUsecase struct {

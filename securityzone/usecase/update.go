@@ -2,7 +2,8 @@ package usecase
 
 import (
 	"context"
-	"github.com/gradusp/crispy/ctrl/model"
+
+	"github.com/gradusp/crispy/model"
 )
 
 func (szuc SecurityZoneUsecase) Update(ctx context.Context, id, name string) error {

@@ -1,9 +1,11 @@
 package http
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gradusp/crispy/ctrl/secrets"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/gradusp/crispy/secrets"
 )
 
 const (

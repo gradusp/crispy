@@ -1,4 +1,4 @@
-package swagger
+package openapi
 
 import (
 	"embed"
@@ -6,6 +6,3 @@ import (
 
 //go:embed openapi.yml
 var OpenAPI embed.FS
-
-//go:embed ui/*
-var UI embed.FS

@@ -1,0 +1,14 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+
+EnvironmentFile=/etc/default/crispy
+ExecStart=/usr/bin/crispy
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -3,13 +3,13 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/gradusp/crispy/securityzone"
+	"github.com/gradusp/crispy/zone"
 )
 
-func RegisterHTTPEndpoint(router *gin.RouterGroup, uc securityzone.Usecase) {
+func RegisterHTTPEndpoint(router *gin.RouterGroup, uc zone.Usecase) {
 	h := NewHandler(uc)
 
-	securityZones := router.Group("/security-zones")
+	securityZones := router.Group("/zones")
 	{
 		securityZones.POST("", h.Create)
 		securityZones.GET("", h.Get)

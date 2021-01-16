@@ -1,4 +1,4 @@
-create table if not exists controller.security_zones
+create table if not exists controller.zones
 (
     id   uuid default gen_random_uuid(),
     name text,
@@ -10,14 +10,14 @@ create table if not exists controller.clusters
 (
     id               uuid default gen_random_uuid(),
     name             text not null,
-    security_zone_id uuid not null,
+    zone_id uuid not null,
     capacity         int  not null,
     primary key (id),
     unique (name),
-    foreign key (security_zone_id) references controller.security_zones (id)
+    foreign key (zone_id) references controller.zones (id)
 );
 
-create table if not exists controller.balancing_services
+create table if not exists controller.services
 (
     id             uuid default gen_random_uuid(),
     cluster_id     uuid not null,
@@ -35,19 +35,19 @@ create table if not exists controller.balancing_services
 create table if not exists controller.reals
 (
     id                   uuid default gen_random_uuid(),
-    balancing_service_id uuid not null,
+    service_id uuid not null,
     addr                 inet not null,
     port                 int  not null,
     hc_addr              text,
     primary key (id),
     unique (addr, port),
-    foreign key (balancing_service_id) references controller.balancing_services (id) on delete cascade
+    foreign key (service_id) references controller.services (id) on delete cascade
 );
 
 create table if not exists controller.healthchecks
 (
     id                   uuid default gen_random_uuid(),
-    balancing_service_id uuid,
+    service_id uuid,
     hello_timer          int,
     response_timer       int,
     alive_threshold      int,
@@ -55,6 +55,6 @@ create table if not exists controller.healthchecks
     quorum               int,
     hysteresis           int,
     primary key (id),
-    foreign key (balancing_service_id) references controller.balancing_services (id) on delete cascade
+    foreign key (service_id) references controller.services (id) on delete cascade
 );
 

@@ -1,4 +1,4 @@
-package balancingservice
+package service
 
 import (
 	"context"

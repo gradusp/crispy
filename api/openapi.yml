@@ -10,7 +10,7 @@ info:
 tags:
   - name: clusters
     description: методы работы с Кластерами Балансировки
-  - name: security-zones
+  - name: zones
     description: методы работы с Зонами Безопасности
 #  - name: balancing-services
 #    description: методы работы с Сервисами Балансировки
@@ -28,7 +28,7 @@ paths:
       summary: создать Кластер Балансировки
       operationId: addCluster
       requestBody:
-        description: При передаче JSON объекта c `name` и `securityZoneId`, произойдёт создание новой записи в БД с автогенерацией `id`.
+        description: При передаче JSON объекта c `name` и `zoneId`, произойдёт создание новой записи в БД с автогенерацией `id`.
         content:
           application/json:
             schema:
@@ -45,7 +45,7 @@ paths:
         "400":
           description: некорректный ввод
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
     get:
       tags:
         - clusters
@@ -61,7 +61,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/Cluster"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
   /clusters/{clusterId}:
     get:
       tags:
@@ -84,7 +84,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/Cluster"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
     put:
       tags:
         - clusters
@@ -130,38 +130,38 @@ paths:
         "400":
           description: некорректный ввод
           content: { }
-  /security-zones:
+  /zones:
     post:
       tags:
-        - security-zones
+        - zones
       summary: создать Зону Безопасности
-      operationId: addSecurityZone
+      operationId: addZone
       requestBody:
         description: При передаче JSON объекта с `name`, произойдёт создание новой записи в БД с автогенерацией `id`.
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SecurityZone"
+              $ref: "#/components/schemas/Zone"
       responses:
         "201":
           description: ответ с результирующим объектом
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SecurityZone"
+                $ref: "#/components/schemas/Zone"
         "303":
           $ref: "#/components/responses/AlreadyExist"
         "400":
           description: некорректный ввод
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
 
     get:
       tags:
-        - security-zones
+        - zones
       summary: получить список всех Зон Безопасности
       #      description: Запрос возвращает все созданные ранее Зоны Безопасности.
-      operationId: getSecurityZones
+      operationId: getZones
       responses:
         "200":
           description: массив объектов типа Зона Безопасности
@@ -170,18 +170,18 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/SecurityZone"
+                  $ref: "#/components/schemas/Zone"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
 
-  /security-zones/{securityZoneId}:
+  /zones/{zoneId}:
     get:
       tags:
-        - security-zones
+        - zones
       summary: получить Зону Безопасности
-      operationId: getSecurityZoneById
+      operationId: getZoneById
       parameters:
-        - name: securityZoneId
+        - name: zoneId
           in: path
           description: ID Зоны Безопасности
           required: true
@@ -194,16 +194,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SecurityZone"
+                $ref: "#/components/schemas/Zone"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          $ref: "#/components/responses/Unauthorized"
     put:
       tags:
-        - security-zones
+        - zones
       summary: обновить Зону Безопасности
-      operationId: updateSecurityZone
+      operationId: updateZone
       parameters:
-        - name: securityZoneId
+        - name: zoneId
           in: path
           description: ID Зоны Безопасности
           required: true
@@ -215,7 +215,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SecurityZone"
+              $ref: "#/components/schemas/Zone"
       responses:
         "200":
           description: OK
@@ -226,11 +226,11 @@ paths:
 
     delete:
       tags:
-        - security-zones
+        - zones
       summary: удалить Зону Безопасности
-      operationId: deleteSecurityZone
+      operationId: deleteZone
       parameters:
-        - name: securityZoneId
+        - name: zoneId
           in: path
           description: ID Зоны Безопасности
           required: true
@@ -420,7 +420,7 @@ paths:
 #        405:
 #          description: некорректный ввод
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #
 #    get:
 #      tags:
@@ -438,7 +438,7 @@ paths:
 #                items:
 #                  $ref: "#/components/schemas/Order"
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #
 #    put:
 #      tags:
@@ -456,7 +456,7 @@ paths:
 #        400:
 #          description: указан неверный ID
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #        404:
 #          description: Заказ не найден
 #        405:
@@ -487,7 +487,7 @@ paths:
 #        400:
 #          description: указан неверный ID
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #        404:
 #          description: Заказ не найден
 #    post:
@@ -517,7 +517,7 @@ paths:
 #                  description: bb
 #      responses:
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #        405:
 #          description: некорректный ввод
 #    delete:
@@ -537,7 +537,7 @@ paths:
 #        400:
 #          description: указан неверный ID
 #        401:
-#          $ref: "#/components/responses/UnauthorizedError"
+#          $ref: "#/components/responses/Unauthorized"
 #        404:
 #          description: Заказ не найден
 
@@ -561,7 +561,7 @@ components:
           description: имя Кластера Балансировки
           required: true
           type: string
-        securityZoneId:
+        zoneId:
           description: ID Зоны Безопасности
           required: true
           type: string
@@ -647,8 +647,8 @@ components:
 #          type: array
 #          items:
 #            $ref: '#/components/schemas/Healthcheck'
-#    #        securityzone:
-#    #          $ref: '#/components/schemas/SecurityZone'
+#    #        zone:
+#    #          $ref: '#/components/schemas/Zone'
 
 #    Healthcheck:
 #      type: object
@@ -681,15 +681,15 @@ components:
 #          readOnly: true
 #        datacenter:
 #          type: string
-#        securityzone:
-#          $ref: '#/components/schemas/SecurityZone'
+#        zone:
+#          $ref: '#/components/schemas/Zone'
 #        address:
 #          type: string
 #          format: ipv4
 #        port:
 #          type: number
 
-    SecurityZone:
+    Zone:
       type: object
       properties:
         id:
@@ -699,7 +699,7 @@ components:
           type: string
 
   responses:
-    UnauthorizedError:
+    Unauthorized:
       description: ключ API отсутствует или неверный
       headers:
         LBOS_API_KEY:

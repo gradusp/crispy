@@ -7,7 +7,7 @@ import (
 )
 
 func (cuc ClusterUsecase) Create(ctx context.Context, szid, name string, capacity int64) (*model.Cluster, error) {
-	sz := &model.SecurityZone{
+	sz := &model.Zone{
 		ID: szid,
 	}
 

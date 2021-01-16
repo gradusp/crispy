@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/gradusp/crispy/balancingservice"
 	"github.com/gradusp/crispy/model"
+	"github.com/gradusp/crispy/service"
 )
 
 type BalancingserviceUsecase struct {
-	balancingserviceRepo balancingservice.Repository
+	balancingserviceRepo service.Repository
 }
 
-func NewBalancingserviceUsecase(balancingserviceRepo balancingservice.Repository) *BalancingserviceUsecase {
+func NewBalancingserviceUsecase(balancingserviceRepo service.Repository) *BalancingserviceUsecase {
 	return &BalancingserviceUsecase{
 		balancingserviceRepo: balancingserviceRepo,
 	}

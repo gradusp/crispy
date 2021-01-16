@@ -13,22 +13,27 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gradusp/crispy/swagger"
+	ginzap "github.com/gin-contrib/zap"
+
+	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/gradusp/crispy/assets"
+
+	swagger "github.com/gradusp/crispy/api"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg/v10"
 	"github.com/hashicorp/consul/api"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
-	"github.com/gradusp/crispy/balancingservice"
 	"github.com/gradusp/crispy/cluster"
-	"github.com/gradusp/crispy/securityzone"
+	"github.com/gradusp/crispy/service"
+	"github.com/gradusp/crispy/zone"
 
-	szhttp "github.com/gradusp/crispy/securityzone/delivery/http"
-	szpg "github.com/gradusp/crispy/securityzone/repository/pgsql"
-	szusecase "github.com/gradusp/crispy/securityzone/usecase"
+	zhttp "github.com/gradusp/crispy/zone/delivery/http"
+	zpg "github.com/gradusp/crispy/zone/repository/pgsql"
+	szusecase "github.com/gradusp/crispy/zone/usecase"
 
 	chttp "github.com/gradusp/crispy/cluster/delivery/http"
 	cpg "github.com/gradusp/crispy/cluster/repository/pgsql"
@@ -38,52 +43,60 @@ import (
 	//opg "github.com/gradusp/crispy/order/repository/pgsql"
 	//ouc "github.com/gradusp/crispy/order/usecase"
 
-	bspg "github.com/gradusp/crispy/balancingservice/repository/pgsql"
-	bsuc "github.com/gradusp/crispy/balancingservice/usecase"
+	spg "github.com/gradusp/crispy/service/repository/pgsql"
+	bsuc "github.com/gradusp/crispy/service/usecase"
 )
 
 type App struct {
 	httpServer *http.Server
+	logger     *zap.Logger
 
-	securityZoneUC securityzone.Usecase
-	clusterUC      cluster.Usecase
+	zoneUC    zone.Usecase
+	clusterUC cluster.Usecase
+	serviceUC service.Usecase
 	//orderUC            order.Usecase
-	balancingserviceUC balancingservice.Usecase
 }
 
 func NewApp() *App {
-	if err := godotenv.Load(); err != nil {
-		fmt.Println("No .env file found", err)
+	var logger *zap.Logger
+	if gin.Mode() == gin.ReleaseMode {
+		l, err := zap.NewProduction()
+		if err != nil {
+			panic(err)
+		}
+		logger = l
+	} else {
+		l, err := zap.NewDevelopment()
+		if err != nil {
+			panic(err)
+		}
+		logger = l
 	}
 
+	pool := initPGX()
 	db := initDB()
 	kv := initConsul()
-	l, err := zap.NewDevelopment()
-	if err != nil {
-		log.Fatalf("can't initialize zap logger: %v", err)
-	}
 
-	securityZoneRepo := szpg.NewSecurityzoneRepo(db, kv, l.Sugar())
-	clusterRepo := cpg.NewClusterRepo(db, kv, l.Sugar())
-	//orderRepo := opg.NewOrderRepo(db, kv, l.Sugar())
-	balancingserviceRepo := bspg.NewBalancingserviceRepo(db, kv, l.Sugar())
+	zoneRepo := zpg.NewZonePostgresRepo(pool, kv, logger.Sugar())
+	clusterRepo := cpg.NewClusterRepo(pool, kv, logger.Sugar())
+	serviceRepo := spg.NewBalancingserviceRepo(db, kv, logger.Sugar())
+	//orderRepo := opg.NewOrderRepo(db, kv, logger.Sugar())
 
 	return &App{
-		clusterUC:      cuc.NewClusterUsecase(clusterRepo),
-		securityZoneUC: szusecase.NewSecurityZoneUseCase(securityZoneRepo),
+		logger:    logger,
+		clusterUC: cuc.NewClusterUsecase(clusterRepo),
+		serviceUC: bsuc.NewServiceUsecase(serviceRepo),
+		zoneUC:    szusecase.NewZoneUseCase(zoneRepo),
 		//orderUC:            ouc.NewOrderUsecase(orderRepo),
-		balancingserviceUC: bsuc.NewBalancingserviceUsecase(balancingserviceRepo),
 	}
 }
 
 func (a *App) Run(port string) error {
-	// logger, _ := zap.NewProduction()
-
 	// Init gin handler
 	router := gin.New()
-	router.Use(gin.Recovery(), gin.Logger())
-	// router.Use(ginzap.Ginzap(logger, time.RFC3339, true))
-	// router.Use(ginzap.RecoveryWithZap(logger, true))
+	//router.Use(gin.Recovery(), gin.Logger())
+	router.Use(ginzap.Ginzap(a.logger, time.RFC3339, true))
+	router.Use(ginzap.RecoveryWithZap(a.logger, true))
 
 	// Set up gin CORS official middleware
 	config := cors.DefaultConfig()
@@ -93,12 +106,8 @@ func (a *App) Run(port string) error {
 	config.AllowCredentials = true
 	router.Use(cors.New(config))
 
-	// Set up http handlers
-	// SignIn endpoints
-	// ...
-
 	// embedding of static assets of SwaggerUI
-	f, _ := fs.Sub(swagger.UI, "ui")
+	f, _ := fs.Sub(assets.UI, "ui")
 	router.StaticFS("/swagger", http.FS(f))
 	router.GET("openapi.yml", func(c *gin.Context) {
 		file, _ := swagger.OpenAPI.ReadFile("openapi.yml")
@@ -111,11 +120,11 @@ func (a *App) Run(port string) error {
 
 	// API Endpoints
 	rapi := router.Group("/api/v1")
-	rapi.Use(szhttp.AuthAPIKey("LBOS_API_KEY")) // FIXME: current LBOS_API_KEY flow is wrong
+	rapi.Use(zhttp.AuthAPIKey("CRISPY_API_KEY")) // FIXME: current CRISPY_API_KEY flow needs refactor
 
-	szhttp.RegisterHTTPEndpoint(rapi, a.securityZoneUC)
+	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC)
 	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC)
-	//ohttp.RegisterHTTPEndpoint(rapi, a.orderUC, a.balancingserviceUC) // FIXME: figure out why two UC here?
+	//ohttp.RegisterHTTPEndpoint(rapi, a.orderUC, a.serviceUC) // FIXME: figure out why two UC here?
 
 	// HTTP Server
 	a.httpServer = &http.Server{
@@ -143,14 +152,32 @@ func (a *App) Run(port string) error {
 	return a.httpServer.Shutdown(ctx)
 }
 
+func initPGX() *pgxpool.Pool {
+	s := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("CRISPY_DB_USER"),
+		os.Getenv("CRISPY_DB_PASS"),
+		os.Getenv("CRISPY_DB_HOST"),
+		os.Getenv("CRISPY_DB_PORT"),
+		os.Getenv("CRISPY_DB_NAME"),
+	)
+
+	pool, err := pgxpool.Connect(context.Background(), s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+
+	return pool
+}
+
 func initDB() *pg.DB {
-	addr := fmt.Sprintf("%s:%s", os.Getenv("LBOS_DB_HOST"), os.Getenv("LBOS_DB_PORT"))
+	addr := fmt.Sprintf("%s:%s", os.Getenv("CRISPY_DB_HOST"), os.Getenv("CRISPY_DB_PORT"))
 	db := pg.Connect(&pg.Options{
-		ApplicationName: "lbosCtrl",
+		ApplicationName: "crispy",
 		Addr:            addr,
-		Database:        os.Getenv("LBOS_DB_USER"),
-		User:            os.Getenv("LBOS_DB_USER"),
-		Password:        os.Getenv("LBOS_DB_PASS"),
+		Database:        os.Getenv("CRISPY_DB_NAME"),
+		User:            os.Getenv("CRISPY_DB_USER"),
+		Password:        os.Getenv("CRISPY_DB_PASS"),
 	})
 
 	return db

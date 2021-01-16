@@ -7,7 +7,7 @@ import (
 )
 
 func (cuc ClusterUsecase) Update(ctx context.Context, szid, id, name string, capacity int64) error {
-	sz := &model.SecurityZone{
+	sz := &model.Zone{
 		ID: szid,
 	}
 

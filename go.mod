@@ -9,6 +9,7 @@ require (
 	github.com/go-pg/pg/extra/pgdebug v0.2.0
 	github.com/go-pg/pg/v10 v10.7.3
 	github.com/hashicorp/consul/api v1.8.0
-	github.com/joho/godotenv v1.3.0
+	github.com/jackc/pgconn v1.8.0
+	github.com/jackc/pgx/v4 v4.10.1
 	go.uber.org/zap v1.16.0
 )

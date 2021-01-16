@@ -26,11 +26,11 @@ type ClusterRepo struct {
 	log *zap.SugaredLogger
 }
 
-func (cr *ClusterRepo) Create(ctx context.Context, sz *model.SecurityZone, c *model.Cluster) (*model.Cluster, error) {
+func (cr *ClusterRepo) Create(ctx context.Context, sz *model.Zone, c *model.Cluster) (*model.Cluster, error) {
 	// TODO: missing trace logs here?
 	// TODO: error case `invalid security_zone_id`
 
-	// Request SecurityZone from DB
+	// Request Zone from DB
 	err := cr.db.Model(sz).WherePK().Select()
 	if err != nil {
 		cr.log.Error("securityZone for cluster not found", err)
@@ -78,7 +78,7 @@ func (cr *ClusterRepo) GetByID(ctx context.Context, c *model.Cluster) (*model.Cl
 	return c, err
 }
 
-func (cr *ClusterRepo) Update(ctx context.Context, sz *model.SecurityZone, c *model.Cluster) error {
+func (cr *ClusterRepo) Update(ctx context.Context, sz *model.Zone, c *model.Cluster) error {
 	// FIXME: error case `name already exist` (name is unique in db)
 	// TODO: test case `change name`
 	// TODO: test case `change SecurityZoneID`

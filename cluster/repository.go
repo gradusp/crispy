@@ -7,12 +7,12 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, sz *model.Zone, c *model.Cluster) (*model.Cluster, error)
+	Create(ctx context.Context, zone *model.Zone, cluster *model.Cluster) (*model.Cluster, error)
 
 	Get(ctx context.Context) ([]*model.Cluster, error)
-	GetByID(ctx context.Context, c *model.Cluster) (*model.Cluster, error)
+	GetByID(ctx context.Context, cluster *model.Cluster) (*model.Cluster, error)
 
-	Update(ctx context.Context, sz *model.Zone, c *model.Cluster) error
+	Update(ctx context.Context, cluster *model.Cluster) error
 
-	Delete(ctx context.Context, c *model.Cluster) error
+	Delete(ctx context.Context, cluster *model.Cluster) error
 }

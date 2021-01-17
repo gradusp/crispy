@@ -3,7 +3,7 @@ package cluster
 import "errors"
 
 var (
-	ErrClusterNotFound          = errors.New("cluster not found")
-	ErrClusterAlreadyExist      = errors.New("cluster with such name already exist")
-	ErrRequestedSecZoneNotFound = errors.New("there is no Security Zone with provided UUID")
+	ErrAlreadyExist = errors.New("cluster with such name already exist")
+	ErrHaveServices = errors.New("cluster contain related Services so it can't be deleted")
+	ErrNotFound     = errors.New("cluster not found")
 )

@@ -1,10 +1,10 @@
 package model
 
 type Cluster struct {
-	tableName      struct{} `pg:"controller.clusters"`
-	SecurityZone   *Zone    `json:",omitempty" pg:"rel:has-one"`
-	SecurityZoneID string   `json:"-"`
-	ID             string   `json:"id" pg:"id,pk"`
-	Name           string   `json:"name" pg:"name"`
-	Capacity       int64    `json:"capacity" pg:"capacity"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Capacity int64  `json:"capacity"`
+	Usage    int64  `json:"usage"`
+	ZoneID   string `json:"zoneId,omitempty"`
+	Zone     *Zone  `json:"zone,omitempty"`
 }

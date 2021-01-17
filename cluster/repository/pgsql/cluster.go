@@ -2,112 +2,238 @@ package pgsql
 
 import (
 	"context"
+	"errors"
 
-	"github.com/go-pg/pg/v10"
-	"github.com/go-pg/pg/v10/orm"
 	"github.com/hashicorp/consul/api"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
 	"github.com/gradusp/crispy/cluster"
 	"github.com/gradusp/crispy/model"
 )
 
-func NewClusterRepo(db *pg.DB, kv *api.KV, l *zap.SugaredLogger) *ClusterRepo {
-	return &ClusterRepo{
-		db:  db,
-		kv:  kv,
-		log: l,
-	}
-}
-
 type ClusterRepo struct {
-	db  orm.DB
-	kv  *api.KV
-	log *zap.SugaredLogger
+	pool *pgxpool.Pool
+	kv   *api.KV
+	log  *zap.SugaredLogger
 }
 
-func (cr *ClusterRepo) Create(ctx context.Context, sz *model.Zone, c *model.Cluster) (*model.Cluster, error) {
+func NewClusterRepo(pool *pgxpool.Pool, kv *api.KV, l *zap.SugaredLogger) *ClusterRepo {
+	return &ClusterRepo{
+		pool: pool,
+		kv:   kv,
+		log:  l,
+	}
+}
+
+func (cr *ClusterRepo) Create(ctx context.Context, sz *model.Zone, cl *model.Cluster) (*model.Cluster, error) {
+	c, err := cr.pool.Acquire(ctx)
+	if err != nil {
+		cr.log.Error(err)
+		return nil, err
+	}
+	defer c.Release()
+
+	// @khannz: decided to not implement existence check here,
+	// since name constraint @ DB would give feedback
+
 	// TODO: missing trace logs here?
-	// TODO: error case `invalid security_zone_id`
+	// TODO: error case `invalid zone_id`
 
-	// Request Zone from DB
-	err := cr.db.Model(sz).WherePK().Select()
-	if err != nil {
-		cr.log.Error("securityZone for cluster not found", err)
-		return nil, err
-	}
-	c.SecurityZoneID = sz.ID
-
-	r, err := cr.db.Model(c).Where("name = ?", c.Name).Exists()
-	if err != nil {
-		cr.log.Error(err)
-	} else if r {
-		if err = cr.db.Model(c).Where("name = ?", c.Name).Select(); err != nil {
-			cr.log.Error(err)
-			return nil, err
+	query := `insert into controller.clusters (name, capacity, zone_id) values ($1, $2, $3) returning id;`
+	if err := c.QueryRow(ctx, query, cl.Name, cl.Capacity, sz.ID).Scan(&cl.ID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch {
+			case pgErr.Code == "23505":
+				cr.log.Warnw("issue with cluster on create",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return cl, cluster.ErrAlreadyExist
+			default:
+				cr.log.Errorw("issue with cluster on create",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return nil, err
+			}
 		}
-		return c, cluster.ErrClusterAlreadyExist
-	}
-
-	_, err = cr.db.Model(c).Insert()
-	if err != nil {
 		cr.log.Error(err)
 		return nil, err
 	}
 
-	if err = cr.db.Model(c).Column("cluster.*").Where("cluster.name = ?", c.Name).Select(); err != nil {
+	// since we already got zone_id from usecase, we can just query name for the whole object
+	if err := c.QueryRow(ctx, "select name from controller.zones where id=$1;", sz.ID).Scan(&sz.Name); err != nil {
+		// TODO: make it more complex
+		// (not so critical right after previous block)
 		cr.log.Error(err)
 		return nil, err
 	}
-
-	return c, nil
+	cl.Zone = sz
+	return cl, nil
 }
 
 func (cr *ClusterRepo) Get(ctx context.Context) ([]*model.Cluster, error) {
-	var r []*model.Cluster
-	err := cr.db.Model(&r).Select()
+	c, err := cr.pool.Acquire(ctx)
 	if err != nil {
 		cr.log.Error(err)
 		return nil, err
 	}
-	return r, nil
+	defer c.Release()
+
+	query := `select c.id, c.name, c.capacity, coalesce(sum(s.bandwidth),0), z.id, z.name
+from controller.clusters c
+         left join controller.services s on c.id = s.cluster_id
+         left join controller.zones z on c.zone_id = z.id
+group by c.id, z.id;`
+	clusters, err := c.Query(ctx, query)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			cr.log.Errorw("can't get clusters",
+				"error_body", pgErr.Message,
+				"error_code", pgErr.Code,
+			)
+			return nil, cluster.ErrNotFound
+		}
+		cr.log.Error("clusters can't be selected", err)
+		return nil, err
+	}
+
+	var r []*model.Cluster
+	for clusters.Next() {
+		var (
+			c model.Cluster
+			z model.Zone
+		)
+		err = clusters.Scan(&c.ID, &c.Name, &c.Capacity, &c.Usage, &z.ID, &z.Name)
+		if err != nil {
+			cr.log.Error(err)
+			return nil, err
+		}
+		c.Zone = &z
+		r = append(r, &c)
+	}
+	err = clusters.Err()
+
+	return r, err
 }
 
-func (cr *ClusterRepo) GetByID(ctx context.Context, c *model.Cluster) (*model.Cluster, error) {
-	err := cr.db.Model(c).WherePK().Select()
-	return c, err
+func (cr *ClusterRepo) GetByID(ctx context.Context, cl *model.Cluster) (*model.Cluster, error) {
+	c, err := cr.pool.Acquire(ctx)
+	if err != nil {
+		cr.log.Error(err)
+		return nil, err
+	}
+	defer c.Release()
+
+	query := `select c.id, c.name, c.capacity, coalesce(sum(s.bandwidth),0), z.id, z.name
+from controller.clusters c
+         left join controller.services s on c.id = s.cluster_id
+         left join controller.zones z on c.zone_id = z.id
+where c.id=$1
+group by c.id, z.id;`
+
+	var z model.Zone
+	if err = c.QueryRow(ctx, query, cl.ID).Scan(&cl.ID, &cl.Name, &cl.Capacity, &cl.Usage, &z.ID, &z.Name); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, cluster.ErrNotFound
+		}
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			cr.log.Errorw("can't get zone",
+				"error_body", pgErr.Message,
+				"error_code", pgErr.Code,
+			)
+			return nil, cluster.ErrNotFound
+		}
+		return nil, err
+	}
+	cl.Zone = &z
+	return cl, err
 }
 
-func (cr *ClusterRepo) Update(ctx context.Context, sz *model.Zone, c *model.Cluster) error {
+func (cr *ClusterRepo) Update(ctx context.Context, cl *model.Cluster) error {
+	c, err := cr.pool.Acquire(ctx)
+	if err != nil {
+		cr.log.Error(err)
+		return nil
+	}
+	defer c.Release()
+
+	// TODO: current code can't change only changed things - working with whole object via handler>usecase>_here_
+	r, err := c.Exec(ctx, "update controller.clusters set name=$2, capacity=$3 where id=$1;", cl.ID, cl.Name, cl.Capacity)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch {
+			case pgErr.Code == "23505":
+				cr.log.Warnw("issue with cluster on update",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return cluster.ErrAlreadyExist
+			default:
+				cr.log.Errorw("issue with cluster on update",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return cluster.ErrNotFound
+			}
+		}
+		cr.log.Error(err)
+		return cluster.ErrNotFound
+	}
+	if r.RowsAffected() != 1 {
+		cr.log.Debug("update for non-existing cluster ID")
+		return cluster.ErrNotFound
+	}
+
 	// FIXME: error case `name already exist` (name is unique in db)
+	// FIXME: check if existing ID used or 400
 	// TODO: test case `change name`
-	// TODO: test case `change SecurityZoneID`
+	// TODO: test case `change ZoneID`
 	// TODO: test case `change capacity`
 
-	// Select Security Zone from DB by ID so we can be sure such Security Zone is real
-	err := cr.db.Model(sz).WherePK().Select()
-	if err != nil {
-		// TODO: discover better way to check what exact err comes from pg (next block maybe?)
-		// FIXME: rework guessing that err is only when nothing returned
-		return cluster.ErrRequestedSecZoneNotFound
-	}
-	c.SecurityZoneID = sz.ID
-
-	_, err = cr.db.Model(c).WherePK().Update()
-	//_, err = cr.db.Model(c).Where("id = ?", c.ID).Update()
-	if err != nil {
-		pgErr, ok := err.(pg.Error)
-		if ok && pgErr.IntegrityViolation() {
-			return cluster.ErrClusterAlreadyExist
-		}
-		panic(err)
-		return err
-	}
-
-	return err
+	return nil
 }
 
-func (cr *ClusterRepo) Delete(ctx context.Context, c *model.Cluster) error {
-	_, err := cr.db.Model(c).WherePK().Delete()
-	return err
+func (cr *ClusterRepo) Delete(ctx context.Context, cl *model.Cluster) error {
+	c, err := cr.pool.Acquire(ctx)
+	if err != nil {
+		cr.log.Error(err)
+		return err
+	}
+	defer c.Release()
+
+	r, err := c.Exec(ctx, "delete from controller.clusters where id=$1", cl.ID)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch {
+			case pgErr.Code == "23503":
+				cr.log.Warnw("issue with cluster on delete",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return cluster.ErrHaveServices
+			default:
+				cr.log.Errorw("issue with cluster on delete",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code,
+				)
+				return err
+			}
+		}
+		cr.log.Error(err)
+		return err
+	}
+	if r.RowsAffected() != 1 {
+		cr.log.Debug("delete for non-existing cluster ID")
+		return nil
+	}
+	return nil
 }

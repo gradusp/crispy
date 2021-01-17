@@ -1,6 +1,3 @@
-// TODO: https://github.com/caarlos0/env
-// TODO: https://pkg.go.dev/go.uber.org/zap
-
 package server
 
 import (
@@ -13,20 +10,16 @@ import (
 	"os/signal"
 	"time"
 
-	ginzap "github.com/gin-contrib/zap"
-
-	"github.com/jackc/pgx/v4/pgxpool"
-
-	"github.com/gradusp/crispy/assets"
-
-	swagger "github.com/gradusp/crispy/api"
-
 	"github.com/gin-contrib/cors"
+	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/go-pg/pg/v10"
 	"github.com/hashicorp/consul/api"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 
+	swagger "github.com/gradusp/crispy/api"
+	"github.com/gradusp/crispy/assets"
 	"github.com/gradusp/crispy/cluster"
 	"github.com/gradusp/crispy/service"
 	"github.com/gradusp/crispy/zone"
@@ -39,13 +32,16 @@ import (
 	cpg "github.com/gradusp/crispy/cluster/repository/pgsql"
 	cuc "github.com/gradusp/crispy/cluster/usecase"
 
+	spg "github.com/gradusp/crispy/service/repository/pgsql"
+	bsuc "github.com/gradusp/crispy/service/usecase"
+	//
 	//ohttp "github.com/gradusp/crispy/order/delivery/http"
 	//opg "github.com/gradusp/crispy/order/repository/pgsql"
 	//ouc "github.com/gradusp/crispy/order/usecase"
-
-	spg "github.com/gradusp/crispy/service/repository/pgsql"
-	bsuc "github.com/gradusp/crispy/service/usecase"
 )
+
+// TODO: https://github.com/caarlos0/env
+// TODO: https://pkg.go.dev/go.uber.org/zap
 
 type App struct {
 	httpServer *http.Server
@@ -79,7 +75,7 @@ func NewApp() *App {
 
 	zoneRepo := zpg.NewZonePostgresRepo(pool, kv, logger.Sugar())
 	clusterRepo := cpg.NewClusterRepo(pool, kv, logger.Sugar())
-	serviceRepo := spg.NewBalancingserviceRepo(db, kv, logger.Sugar())
+	serviceRepo := spg.NewServiceRepo(db, kv, logger.Sugar())
 	//orderRepo := opg.NewOrderRepo(db, kv, logger.Sugar())
 
 	return &App{
@@ -109,7 +105,7 @@ func (a *App) Run(port string) error {
 	// embedding of static assets of SwaggerUI
 	f, _ := fs.Sub(assets.UI, "ui")
 	router.StaticFS("/swagger", http.FS(f))
-	router.GET("openapi.yml", func(c *gin.Context) {
+	router.GET("/api/v1/openapi.yml", func(c *gin.Context) {
 		file, _ := swagger.OpenAPI.ReadFile("openapi.yml")
 		c.Data(http.StatusOK, "application/yaml", file)
 	})

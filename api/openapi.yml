@@ -12,14 +12,10 @@ tags:
     description: методы работы с Кластерами Балансировки
   - name: zones
     description: методы работы с Зонами Безопасности
-#  - name: balancing-services
+#  - name: services
 #    description: методы работы с Сервисами Балансировки
-#  - name: clusters
-#    description: методы работы с Кластерами
-#  - name: orders
-#    description: методы работы с Заказами
 servers:
-  - url: http://localhost:8080/api/v1
+  - url: /api/v1
 paths:
   /clusters:
     post:
@@ -49,7 +45,7 @@ paths:
     get:
       tags:
         - clusters
-      summary: получить списоке всех Кластеров Балансировки
+      summary: получить список всех Кластеров Балансировки
       operationId: getCluster
       responses:
         "200":

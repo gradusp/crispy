@@ -32,6 +32,7 @@ func (h *Handler) Create(c *gin.Context) {
 			"code":    http.StatusBadRequest,
 			"message": http.StatusText(http.StatusBadRequest),
 		})
+		return
 	}
 
 	res, err := h.usecase.Create(c.Request.Context(), req.ZoneID, req.Name, req.Capacity)

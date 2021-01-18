@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/gradusp/crispy/internal/healthcheck"
+
 	"github.com/gin-contrib/cors"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -21,6 +23,7 @@ import (
 	swagger "github.com/gradusp/crispy/api"
 	"github.com/gradusp/crispy/assets"
 	"github.com/gradusp/crispy/internal/cluster"
+	"github.com/gradusp/crispy/internal/real"
 	"github.com/gradusp/crispy/internal/service"
 	"github.com/gradusp/crispy/internal/zone"
 
@@ -32,8 +35,15 @@ import (
 	cpg "github.com/gradusp/crispy/internal/cluster/repository/pgsql"
 	cuc "github.com/gradusp/crispy/internal/cluster/usecase"
 
+	srest "github.com/gradusp/crispy/internal/service/delivery/rest"
 	spg "github.com/gradusp/crispy/internal/service/repository/pgsql"
-	bsuc "github.com/gradusp/crispy/internal/service/usecase"
+	suc "github.com/gradusp/crispy/internal/service/usecase"
+
+	rpg "github.com/gradusp/crispy/internal/real/repository/pgsql"
+	ruc "github.com/gradusp/crispy/internal/real/usecase"
+
+	hcpg "github.com/gradusp/crispy/internal/healthcheck/repository/pgsql"
+	hcuc "github.com/gradusp/crispy/internal/healthcheck/usecase"
 	//
 	//ohttp "github.com/gradusp/crispy/order/delivery/http"
 	//opg "github.com/gradusp/crispy/order/repository/pgsql"
@@ -47,9 +57,11 @@ type App struct {
 	httpServer *http.Server
 	logger     *zap.Logger
 
-	zoneUC    zone.Usecase
-	clusterUC cluster.Usecase
-	serviceUC service.Usecase
+	zoneUC        zone.Usecase
+	clusterUC     cluster.Usecase
+	healthcheckUC healthcheck.Usecase
+	realUC        real.Usecase
+	serviceUC     service.Usecase
 }
 
 func NewApp() *App {
@@ -69,19 +81,23 @@ func NewApp() *App {
 	}
 
 	pool := initPGX()
-	db := initDB()
+	//db := initDB()
 	kv := initConsul()
 
 	zoneRepo := zpg.NewZonePostgresRepo(pool, kv, logger.Sugar())
 	clusterRepo := cpg.NewClusterRepo(pool, kv, logger.Sugar())
-	serviceRepo := spg.NewServiceRepo(db, kv, logger.Sugar())
+	serviceRepo := spg.NewServiceRepo(pool, logger.Sugar())
+	realRepo := rpg.NewRealPostgresRepo(pool, logger.Sugar())
+	healthcheckRepo := hcpg.NewHealthcheckPostgresRepo(pool, logger.Sugar())
 	//orderRepo := opg.NewOrderRepo(db, kv, logger.Sugar())
 
 	return &App{
-		logger:    logger,
-		clusterUC: cuc.NewClusterUsecase(clusterRepo),
-		serviceUC: bsuc.NewServiceUsecase(serviceRepo),
-		zoneUC:    szusecase.NewZoneUseCase(zoneRepo),
+		logger:        logger,
+		clusterUC:     cuc.NewClusterUsecase(clusterRepo),
+		serviceUC:     suc.NewServiceUsecase(serviceRepo),
+		realUC:        ruc.NewRealUsecase(realRepo),
+		healthcheckUC: hcuc.NewHealthcheckUsecase(healthcheckRepo),
+		zoneUC:        szusecase.NewZoneUseCase(zoneRepo),
 	}
 }
 
@@ -106,9 +122,9 @@ func (a *App) Run(port string) error {
 		file, _ := swagger.OpenAPI.ReadFile("openapi.yml")
 		c.Data(http.StatusOK, "application/yaml", file)
 	})
-	// TODO: implement favicon path
+	// TODO: favicon path
 	// https://github.com/gin-gonic/examples/blob/master/assets-in-binary/example02/main.go#L34
-	// TODO: implement gzip
+	// TODO: gzip
 	// https://github.com/gin-contrib/gzip
 
 	// API Endpoints
@@ -117,6 +133,7 @@ func (a *App) Run(port string) error {
 
 	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC)
 	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC)
+	srest.RegisterHTTPEndpoint(rapi, a.healthcheckUC, a.realUC, a.serviceUC)
 
 	// HTTP Server
 	a.httpServer = &http.Server{

@@ -16,16 +16,14 @@ import (
 )
 
 type ZonePostgresRepo struct {
-	//kv  *api.KV
 	log  *zap.SugaredLogger
 	pool *pgxpool.Pool
 }
 
 func NewZonePostgresRepo(pool *pgxpool.Pool, kv *api.KV, l *zap.SugaredLogger) *ZonePostgresRepo {
 	return &ZonePostgresRepo{
-		//kv:  kv,
-		pool: pool,
 		log:  l,
+		pool: pool,
 	}
 }
 

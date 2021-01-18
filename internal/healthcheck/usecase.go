@@ -9,7 +9,8 @@ import (
 type Usecase interface {
 	Create(ctx context.Context, sid string, ht, rt, ath, dth, q, h int) (*model.Healthcheck, error)
 
-	//GetByBalancingService(ctx context.Context, bsid string) ([]*model.Service, error)
+	//GetByID(ctx context.Context, id string) (*model.Healthcheck, error)
+	//GetByService(ctx context.Context, sid string) ([]*model.Healthcheck, error)
 
 	//Update(ctx context.Context, id string, ht, rt, ath, dth, q, h int) error
 

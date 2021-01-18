@@ -3,10 +3,11 @@ package model
 import "net"
 
 type Real struct {
-	tableName          struct{} `pg:"controller.reals"`
-	BalancingService   *Service `json:"balancingService" pg:"rel:has-one"`
-	BalancingServiceID string   `json:"-"`
-	ID                 string   `json:"id" pg:"id,pk"`
-	Addr               net.IP   `json:"addr" pg:"addr"`
-	Port               int      `json:"port" pg:"port"`
+	ID              string   `json:"id"`
+	Addr            net.IP   `json:"addr"`
+	Port            int      `json:"port"`
+	HealthcheckAddr net.IP   `json:"hcAddr"`
+	HealthcheckPort int      `json:"hcPort"`
+	ServiceID       string   `json:"serviceId,omitempty"`
+	Service         *Service `json:"service,omitempty"`
 }

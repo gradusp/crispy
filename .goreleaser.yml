@@ -11,7 +11,7 @@ builds:
       - amd64
     targets:
       - linux_amd64
-    main: ./cmd/api/main.go
+    main: ./main.go
     binary: "crispy"
     gobinary: go1.16beta1
 
@@ -42,8 +42,8 @@ nfpms:
       preremove: build/rpm/preremove.sh
 #      postremove: build/rpm/postremove.sh
     contents:
-      - src: build/rpm/crispy.service
+      - src: init/crispy.service
         dst: /usr/lib/systemd/system/crispy.service
-      - src: build/rpm/crispy.env
+      - src: init/crispy.env
         dst: /etc/default/crispy
         type: "config|noreplace"

@@ -15,10 +15,10 @@ builds:
     binary: "crispy"
     gobinary: go1.16beta1
 
-# archives:
-#   - replacements:
-#       amd64: x86_64
-#     name_template: '{{ .ProjectName }}-{{ .Version }}.{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+archives:
+  - replacements:
+      amd64: x86_64
+    name_template: '{{ .ProjectName }}-{{ .Version }}.{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
 
 nfpms:
   - id: 1

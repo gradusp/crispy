@@ -15,7 +15,6 @@ import (
 	"github.com/gin-contrib/cors"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
-	"github.com/go-pg/pg/v10"
 	"github.com/hashicorp/consul/api"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
@@ -81,7 +80,6 @@ func NewApp() *App {
 	}
 
 	pool := initPGX()
-	//db := initDB()
 	kv := initConsul()
 
 	zoneRepo := zpg.NewZonePostgresRepo(pool, kv, logger.Sugar())
@@ -137,7 +135,7 @@ func (a *App) Run(port string) error {
 
 	// HTTP Server
 	a.httpServer = &http.Server{
-		Addr:           ":8080",
+		Addr:           ":" + os.Getenv("CRISPY_PORT"),
 		Handler:        router,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -179,22 +177,9 @@ func initPGX() *pgxpool.Pool {
 	return pool
 }
 
-func initDB() *pg.DB {
-	addr := fmt.Sprintf("%s:%s", os.Getenv("CRISPY_DB_HOST"), os.Getenv("CRISPY_DB_PORT"))
-	db := pg.Connect(&pg.Options{
-		ApplicationName: "crispy",
-		Addr:            addr,
-		Database:        os.Getenv("CRISPY_DB_NAME"),
-		User:            os.Getenv("CRISPY_DB_USER"),
-		Password:        os.Getenv("CRISPY_DB_PASS"),
-	})
-
-	return db
-}
-
 func initConsul() *api.KV {
 	cfg := &api.Config{
-		Address: "10.56.204.194:18500",
+		Address: os.Getenv("CRISPY_CONSUL_ADDR"),
 	}
 	client, err := api.NewClient(cfg)
 	if err != nil {

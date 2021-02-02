@@ -59,3 +59,10 @@ create table if not exists controller.healthchecks
     foreign key (service_id) references controller.services (id) on delete cascade
 );
 
+create table if not exists controller.audit
+(
+    id   uuid                 default gen_random_uuid(),
+    time timestamptz not null default now(),
+    what text        not null,
+    who  text        not null
+);

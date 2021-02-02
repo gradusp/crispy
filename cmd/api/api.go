@@ -10,8 +10,6 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/gradusp/crispy/internal/healthcheck"
-
 	"github.com/gin-contrib/cors"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -22,6 +20,7 @@ import (
 	swagger "github.com/gradusp/crispy/api"
 	"github.com/gradusp/crispy/assets"
 	"github.com/gradusp/crispy/internal/cluster"
+	"github.com/gradusp/crispy/internal/healthcheck"
 	"github.com/gradusp/crispy/internal/real"
 	"github.com/gradusp/crispy/internal/service"
 	"github.com/gradusp/crispy/internal/zone"

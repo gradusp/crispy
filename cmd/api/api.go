@@ -25,11 +25,11 @@ import (
 	"github.com/gradusp/crispy/internal/service"
 	"github.com/gradusp/crispy/internal/zone"
 
-	zhttp "github.com/gradusp/crispy/internal/zone/delivery/http"
+	zhttp "github.com/gradusp/crispy/internal/zone/delivery/rest"
 	zpg "github.com/gradusp/crispy/internal/zone/repository/pgsql"
 	szusecase "github.com/gradusp/crispy/internal/zone/usecase"
 
-	chttp "github.com/gradusp/crispy/internal/cluster/delivery/http"
+	chttp "github.com/gradusp/crispy/internal/cluster/delivery/rest"
 	cpg "github.com/gradusp/crispy/internal/cluster/repository/pgsql"
 	cuc "github.com/gradusp/crispy/internal/cluster/usecase"
 

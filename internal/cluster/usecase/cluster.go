@@ -47,7 +47,6 @@ func (cuc ClusterUsecase) Update(ctx context.Context, id, name string, capacity 
 		Name:     name,
 		Capacity: capacity,
 	}
-
 	return cuc.clusterRepo.Update(ctx, c)
 }
 

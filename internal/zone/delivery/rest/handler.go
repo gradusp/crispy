@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -56,6 +57,14 @@ func (h *Handler) Create(c *gin.Context) {
 			return
 		}
 	}
+
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	j, err := json.Marshal(&res)
+	if err != nil {
+		panic(err)
+	}
+	what := `{"op":"create","obj":"zone","dsc":` + string(j) + `}`
+	h.auc.Create(c.Request.Context(), who, what)
 
 	c.JSON(http.StatusCreated, &model.Zone{
 		ID:   res.ID,
@@ -124,6 +133,11 @@ func (h *Handler) Update(c *gin.Context) {
 			return
 		}
 	}
+
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	what := fmt.Sprintf(`{"op":"update","obj":"zone","dsc":{"id":"%s","name":"%s"}}`, c.Param("id"), req.Name)
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.Status(http.StatusOK)
 }
 
@@ -146,5 +160,10 @@ func (h *Handler) Delete(c *gin.Context) {
 			return
 		}
 	}
+
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	what := fmt.Sprintf(`{"op":"delete","obj":"zone","dsc":{"id":"%s"}}`, c.Param("id"))
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.Status(http.StatusNoContent)
 }

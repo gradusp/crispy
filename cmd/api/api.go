@@ -19,6 +19,7 @@ import (
 
 	swagger "github.com/gradusp/crispy/api"
 	"github.com/gradusp/crispy/assets"
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/cluster"
 	"github.com/gradusp/crispy/internal/healthcheck"
 	"github.com/gradusp/crispy/internal/real"
@@ -27,7 +28,7 @@ import (
 
 	zhttp "github.com/gradusp/crispy/internal/zone/delivery/rest"
 	zpg "github.com/gradusp/crispy/internal/zone/repository/pgsql"
-	szusecase "github.com/gradusp/crispy/internal/zone/usecase"
+	zuc "github.com/gradusp/crispy/internal/zone/usecase"
 
 	chttp "github.com/gradusp/crispy/internal/cluster/delivery/rest"
 	cpg "github.com/gradusp/crispy/internal/cluster/repository/pgsql"
@@ -42,10 +43,9 @@ import (
 
 	hcpg "github.com/gradusp/crispy/internal/healthcheck/repository/pgsql"
 	hcuc "github.com/gradusp/crispy/internal/healthcheck/usecase"
-	//
-	//ohttp "github.com/gradusp/crispy/order/delivery/http"
-	//opg "github.com/gradusp/crispy/order/repository/pgsql"
-	//ouc "github.com/gradusp/crispy/order/usecase"
+
+	apg "github.com/gradusp/crispy/internal/audit/repository/pgsql"
+	auc "github.com/gradusp/crispy/internal/audit/usecase"
 )
 
 // TODO: https://github.com/caarlos0/env
@@ -60,6 +60,7 @@ type App struct {
 	healthcheckUC healthcheck.Usecase
 	realUC        real.Usecase
 	serviceUC     service.Usecase
+	auditUC       audit.Usecase
 }
 
 func NewApp() *App {
@@ -81,12 +82,12 @@ func NewApp() *App {
 	pool := initPGX()
 	kv := initConsul()
 
-	zoneRepo := zpg.NewZonePostgresRepo(pool, kv, logger.Sugar())
+	zoneRepo := zpg.NewZonePostgresRepo(pool, logger.Sugar())
 	clusterRepo := cpg.NewClusterRepo(pool, kv, logger.Sugar())
 	serviceRepo := spg.NewServiceRepo(pool, logger.Sugar())
 	realRepo := rpg.NewRealPostgresRepo(pool, logger.Sugar())
 	healthcheckRepo := hcpg.NewHealthcheckPostgresRepo(pool, logger.Sugar())
-	//orderRepo := opg.NewOrderRepo(db, kv, logger.Sugar())
+	auditRepo := apg.NewAuditRepo(pool, logger.Sugar())
 
 	return &App{
 		logger:        logger,
@@ -94,7 +95,8 @@ func NewApp() *App {
 		serviceUC:     suc.NewServiceUsecase(serviceRepo),
 		realUC:        ruc.NewRealUsecase(realRepo),
 		healthcheckUC: hcuc.NewHealthcheckUsecase(healthcheckRepo),
-		zoneUC:        szusecase.NewZoneUseCase(zoneRepo),
+		zoneUC:        zuc.NewZoneUseCase(zoneRepo),
+		auditUC:       auc.NewAuditUsecase(auditRepo),
 	}
 }
 
@@ -128,7 +130,7 @@ func (a *App) Run(port string) error {
 	rapi := router.Group("/api/v1")
 	rapi.Use(zhttp.AuthAPIKey("CRISPY_API_KEY")) // FIXME: current CRISPY_API_KEY flow needs refactor
 
-	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC)
+	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC, a.auditUC)
 	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC)
 	srest.RegisterHTTPEndpoint(rapi, a.healthcheckUC, a.realUC, a.serviceUC)
 

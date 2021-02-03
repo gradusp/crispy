@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -20,7 +19,7 @@ type ZonePostgresRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewZonePostgresRepo(pool *pgxpool.Pool, kv *api.KV, l *zap.SugaredLogger) *ZonePostgresRepo {
+func NewZonePostgresRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ZonePostgresRepo {
 	return &ZonePostgresRepo{
 		log:  l,
 		pool: pool,
@@ -49,12 +48,6 @@ func (zr *ZonePostgresRepo) Create(ctx context.Context, sz *model.Zone) (*model.
 		return nil, err
 	}
 
-	// PUT a new KV pair
-	//p := &api.KVPair{Key: "lbos/", Value: []byte("1000")}
-	//_, err = zr.kv.Put(p, nil)
-	//if err != nil {
-	//	panic(err)
-	//}
 	return sz, nil
 }
 
@@ -74,12 +67,12 @@ func (zr *ZonePostgresRepo) Get(ctx context.Context) ([]*model.Zone, error) {
 
 	var r []*model.Zone
 	for zones.Next() {
-		var zone model.Zone
-		err = zones.Scan(&zone.ID, &zone.Name)
+		var z model.Zone
+		err = zones.Scan(&z.ID, &z.Name)
 		if err != nil {
 			return nil, err
 		}
-		r = append(r, &zone)
+		r = append(r, &z)
 	}
 	err = zones.Err()
 

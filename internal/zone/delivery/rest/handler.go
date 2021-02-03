@@ -7,17 +7,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/model"
 	"github.com/gradusp/crispy/internal/zone"
 )
 
 type Handler struct {
-	usecase zone.Usecase
+	zuc zone.Usecase
+	auc audit.Usecase
 }
 
-func NewHandler(useCase zone.Usecase) *Handler {
+func NewHandler(zuc zone.Usecase, auc audit.Usecase) *Handler {
 	return &Handler{
-		usecase: useCase,
+		zuc: zuc,
+		auc: auc,
 	}
 }
 
@@ -35,7 +38,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.Create(c.Request.Context(), req.Name)
+	res, err := h.zuc.Create(c.Request.Context(), req.Name)
 	if err != nil {
 		switch {
 		case errors.Is(err, zone.ErrZoneAlreadyExist):
@@ -61,7 +64,7 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) Get(c *gin.Context) {
-	res, err := h.usecase.Get(c.Request.Context())
+	res, err := h.zuc.Get(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
@@ -73,7 +76,7 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
-	res, err := h.usecase.GetByID(c.Request.Context(), c.Param("id"))
+	res, err := h.zuc.GetByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		switch {
 		case errors.Is(err, zone.ErrZoneNotFound):
@@ -103,7 +106,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	err := h.usecase.Update(c.Request.Context(), c.Param("id"), req.Name)
+	err := h.zuc.Update(c.Request.Context(), c.Param("id"), req.Name)
 	if err != nil {
 		switch {
 		case errors.Is(err, zone.ErrZoneAlreadyExist) ||
@@ -125,7 +128,7 @@ func (h *Handler) Update(c *gin.Context) {
 }
 
 func (h *Handler) Delete(c *gin.Context) {
-	err := h.usecase.Delete(c.Request.Context(), c.Param("id"))
+	err := h.zuc.Delete(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		switch {
 		case errors.Is(err, zone.ErrZoneHaveClusters):

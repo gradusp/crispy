@@ -3,11 +3,12 @@ package rest
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/zone"
 )
 
-func RegisterHTTPEndpoint(router *gin.RouterGroup, uc zone.Usecase) {
-	h := NewHandler(uc)
+func RegisterHTTPEndpoint(router *gin.RouterGroup, zuc zone.Usecase, auc audit.Usecase) {
+	h := NewHandler(zuc, auc)
 
 	securityZones := router.Group("/zones")
 	{

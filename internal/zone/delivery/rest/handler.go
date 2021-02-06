@@ -58,6 +58,7 @@ func (h *Handler) Create(c *gin.Context) {
 		}
 	}
 
+	// TODO: should be refactored for DRY reason
 	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
 	j, err := json.Marshal(&res)
 	if err != nil {
@@ -134,6 +135,7 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 	}
 
+	// TODO: should be refactored for DRY reason
 	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
 	what := fmt.Sprintf(`{"op":"update","obj":"zone","dsc":{"id":"%s","name":"%s"}}`, c.Param("id"), req.Name)
 	h.auc.Create(c.Request.Context(), who, what)
@@ -161,6 +163,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		}
 	}
 
+	// TODO: should be refactored for DRY reason
 	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
 	what := fmt.Sprintf(`{"op":"delete","obj":"zone","dsc":{"id":"%s"}}`, c.Param("id"))
 	h.auc.Create(c.Request.Context(), who, what)

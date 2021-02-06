@@ -1,11 +1,14 @@
 package rest
 
 import (
+	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/healthcheck"
 	"github.com/gradusp/crispy/internal/model"
 	"github.com/gradusp/crispy/internal/real"
@@ -16,13 +19,15 @@ type Handler struct {
 	huc healthcheck.Usecase
 	ruc real.Usecase
 	suc service.Usecase
+	auc audit.Usecase
 }
 
-func NewHandler(huc healthcheck.Usecase, ruc real.Usecase, suc service.Usecase) *Handler {
+func NewHandler(huc healthcheck.Usecase, ruc real.Usecase, suc service.Usecase, auc audit.Usecase) *Handler {
 	return &Handler{
 		huc: huc,
 		ruc: ruc,
 		suc: suc,
+		auc: auc,
 	}
 }
 
@@ -64,7 +69,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	// creating reals
 	for _, r := range req.Reals {
-		if _, err := h.ruc.Create(c.Request.Context(), svc.ID, r.Addr.To4(), r.HealthcheckAddr.To4(), r.Port, r.HealthcheckPort); err != nil {
+		if _, err = h.ruc.Create(c.Request.Context(), svc.ID, r.Addr.To4(), r.HealthcheckAddr.To4(), r.Port, r.HealthcheckPort); err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"code":    http.StatusInternalServerError,
 				"message": http.StatusText(http.StatusInternalServerError),
@@ -88,9 +93,19 @@ func (h *Handler) Create(c *gin.Context) {
 		}
 	}
 
-	res, err := h.suc.GetByID(c.Request.Context(), svc.ID)
+	// FIXME: refactor -- handle error or review interface
+	res, _ := h.suc.GetByID(c.Request.Context(), svc.ID)
+
+	// TODO: should be refactored for DRY reason
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	j, err := json.Marshal(&res)
+	if err != nil {
+		panic(err)
+	}
+	what := `{"op":"create","obj":"service","dsc":` + string(j) + `}`
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.JSON(http.StatusCreated, res)
-	//c.Status(http.StatusCreated)
 }
 
 func (h *Handler) Get(c *gin.Context) {
@@ -129,5 +144,11 @@ func (h *Handler) Delete(c *gin.Context) {
 		})
 		return
 	}
+
+	// TODO: should be refactored for DRY reason
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	what := fmt.Sprintf(`{"op":"delete","obj":"service","dsc":{"id":"%s"}}`, c.Param("id"))
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.Status(http.StatusNoContent)
 }

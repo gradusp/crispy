@@ -132,7 +132,7 @@ func (a *App) Run(port string) error {
 
 	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC, a.auditUC)
 	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC, a.auditUC)
-	srest.RegisterHTTPEndpoint(rapi, a.healthcheckUC, a.realUC, a.serviceUC)
+	srest.RegisterHTTPEndpoint(rapi, a.healthcheckUC, a.realUC, a.serviceUC, a.auditUC)
 
 	// HTTP Server
 	a.httpServer = &http.Server{

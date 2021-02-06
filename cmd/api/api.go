@@ -131,7 +131,7 @@ func (a *App) Run(port string) error {
 	rapi.Use(zhttp.AuthAPIKey("CRISPY_API_KEY")) // FIXME: current CRISPY_API_KEY flow needs refactor
 
 	zhttp.RegisterHTTPEndpoint(rapi, a.zoneUC, a.auditUC)
-	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC)
+	chttp.RegisterHTTPEndpoint(rapi, a.clusterUC, a.auditUC)
 	srest.RegisterHTTPEndpoint(rapi, a.healthcheckUC, a.realUC, a.serviceUC)
 
 	// HTTP Server

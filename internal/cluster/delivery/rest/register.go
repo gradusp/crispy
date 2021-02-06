@@ -3,11 +3,12 @@ package rest
 import (
 	"github.com/gin-gonic/gin"
 
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/cluster"
 )
 
-func RegisterHTTPEndpoint(router *gin.RouterGroup, uc cluster.Usecase) {
-	h := NewHandler(uc)
+func RegisterHTTPEndpoint(router *gin.RouterGroup, cuc cluster.Usecase, auc audit.Usecase) {
+	h := NewHandler(cuc, auc)
 
 	clusters := router.Group("/clusters")
 	{

@@ -1,21 +1,26 @@
 package rest
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/cluster"
 )
 
 type Handler struct {
-	usecase cluster.Usecase
+	cuc cluster.Usecase
+	auc audit.Usecase
 }
 
-func NewHandler(uc cluster.Usecase) *Handler {
+func NewHandler(uc cluster.Usecase, auc audit.Usecase) *Handler {
 	return &Handler{
-		usecase: uc,
+		cuc: uc,
+		auc: auc,
 	}
 }
 
@@ -35,13 +40,13 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.Create(c.Request.Context(), req.ZoneID, req.Name, req.Capacity)
+	res, err := h.cuc.Create(c.Request.Context(), req.ZoneID, req.Name, req.Capacity)
 	if err != nil {
 		if errors.Is(err, cluster.ErrAlreadyExist) {
 			// TODO: 303 status is not good here since there is 3 params
-			//loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
-			//c.Header("Location", loc)
-			//c.AbortWithStatus(http.StatusSeeOther)
+			// loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
+			// c.Header("Location", loc)
+			// c.AbortWithStatus(http.StatusSeeOther)
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"code":    http.StatusBadRequest,
 				"message": http.StatusText(http.StatusBadRequest),
@@ -56,11 +61,20 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// TODO: should be refactored for DRY reason
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	j, err := json.Marshal(&res)
+	if err != nil {
+		panic(err)
+	}
+	what := `{"op":"create","obj":"cluster","dsc":` + string(j) + `}`
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.JSON(http.StatusCreated, res)
 }
 
 func (h *Handler) Get(c *gin.Context) {
-	res, err := h.usecase.Get(c.Request.Context())
+	res, err := h.cuc.Get(c.Request.Context())
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
@@ -72,7 +86,7 @@ func (h *Handler) Get(c *gin.Context) {
 }
 
 func (h *Handler) GetByID(c *gin.Context) {
-	res, err := h.usecase.GetByID(c.Request.Context(), c.Param("id"))
+	res, err := h.cuc.GetByID(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
@@ -99,7 +113,7 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
-	err := h.usecase.Update(c.Request.Context(), c.Param("id"), req.Name, req.Capacity)
+	err := h.cuc.Update(c.Request.Context(), c.Param("id"), req.Name, req.Capacity)
 	if err != nil {
 		switch {
 		case errors.Is(err, cluster.ErrNotFound):
@@ -124,11 +138,17 @@ func (h *Handler) Update(c *gin.Context) {
 			return
 		}
 	}
+
+	// TODO: should be refactored for DRY reason
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	what := fmt.Sprintf(`{"op":"update","obj":"cluster","dsc":{"id":"%s","name":"%s","capacity":%d}}`, c.Param("id"), req.Name, req.Capacity)
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.Status(http.StatusOK)
 }
 
 func (h *Handler) Delete(c *gin.Context) {
-	err := h.usecase.Delete(c.Request.Context(), c.Param("id"))
+	err := h.cuc.Delete(c.Request.Context(), c.Param("id"))
 	if err != nil {
 		switch {
 		case errors.Is(err, cluster.ErrHaveServices):
@@ -146,5 +166,11 @@ func (h *Handler) Delete(c *gin.Context) {
 			return
 		}
 	}
+
+	// TODO: should be refactored for DRY reason
+	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
+	what := fmt.Sprintf(`{"op":"delete","obj":"cluster","dsc":{"id":"%s"}}`, c.Param("id"))
+	h.auc.Create(c.Request.Context(), who, what)
+
 	c.Status(http.StatusNoContent)
 }

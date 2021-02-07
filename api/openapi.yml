@@ -331,24 +331,27 @@ paths:
 components:
   schemas:
     Cluster:
+      description: |
+        Кластер Балансировки обозначает группу физических серверов либо виртуальных машин, обеспечивающих отказоустойчивость спланированных на такой Кластер Сервисов Балансировки.
       type: object
+      required:
+        - name
+        - zoneId
+        - capacity
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
-          description: уникальный ID Кластера
-        name:
-          required: true
-          type: string
-          description: имя Кластера Балансировки
+          description: уникальный ID Кластера Балансировки
         zoneId:
-          required: true
           type: string
           format: uuid
           description: ID Зоны Безопасности
+        name:
+          type: string
+          description: имя Кластера Балансировки
         capacity:
-          required: true
           type: number
           description: предел утилизации Кластера Балансировки
         usage:
@@ -357,7 +360,16 @@ components:
           description: текущая утилизация (вычисляемое значение)
 
     Healthcheck:
+      description: |
+        Хелсчек -- описание механизма и параметров проверки для каждого сервера, куда производится балансировки Сервисом Балансировки
       type: object
+      required:
+        - helloTimer
+        - responseTimer
+        - aliveThreshold
+        - deadThreshold
+        - quorum
+        - hysteresis
       properties:
         id:
           type: string
@@ -365,82 +377,111 @@ components:
           readOnly: true
         helloTimer:
           type: number
+          description: таймер приветствия # FIXME: add details
         responseTimer:
           type: number
+          description: таймер ответа # FIXME: add details
         aliveThreshold:
           type: number
+          description: порог успешных последовательных проверок для включения в балансировку
         deadThreshold:
           type: number
+          description: порог проваленных последовательно проверок для исключения из балансировки
         quorum:
           type: number
+          description: кворум
         hysteresis:
           type: number
-          description: Гистере́зис
+          description: гистере́зис
 
     Real:
+      description: |
+        Сервер, на который производится балансировка Сервисом Балансировки. Значения `addr` + `port` образуют уникальный кортеж и не могут повторяться.
       type: object
+      required:
+        - addr
+        - port
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
+          description: уникальный ID сервера, куда производится балансировка
         addr:
           type: string
           format: ipv4
+          description: ip адрес сервера, куда производится балансировка
         port:
           type: number
-        hcAddr:
-          type: string
-          format: ipv4
-        hcPort:
-          type: number
+          description: порт сервера, куда производится балансировка
 
     Service:
+      description: |
+        Сервис Балансировки
       required:
-        - something
+        - clusterId
+        - balancingType
+        - routingType
+        - bandwidth
+        - proto
+        - addr
+        - port
       type: object
       properties:
         id:
           type: string
           format: uuid
           readOnly: true
-        balancingType:
-          type: string
-          enum: [ round-robin, source-ip, source-ip-port, least-connection, uri, url-param, hdr, random, rdp-cookie ]
-        routingType:
-          type: string
-          enum: [ nat, tunnel, gre-tunnel ]
-        bandwidth:
-          type: number
-        proto:
-          type: string
-          enum: [ tcp, udp ]
-        addr:
-          type: string
-          format: ipv4
-        port:
-          type: number
+          description: уникальный ID Сервиса Балансировки
         clusterId:
           type: string
           format: uuid
+          description: уникальный ID Кластера Балансировки, на котором планируется Сервис Балансировки
+        balancingType:
+          type: string
+          enum: [ round-robin, source-ip, source-ip-port, least-connection, uri, url-param, hdr, random, rdp-cookie ]
+          description: тип балансировки
+        routingType:
+          type: string
+          enum: [ nat, tunnel, gre-tunnel ]
+          description: тип маршрутизации
+        bandwidth:
+          type: number
+          description: величина требуемого резерва полосы пропускания
+        proto:
+          type: string
+          enum: [ tcp, udp ]
+          description: протокол балансировки
+        addr:
+          type: string
+          format: ipv4
+          description: адрес Сервиса Балансировки aka `Virtual IP`/`VIP`
+        port:
+          type: number
+          description: порт Сервиса Балансировки
         reals:
           type: array
           items:
             $ref: '#/components/schemas/Real'
+          description: список адресов, на которые производится балансировка
         healthchecks:
           type: array
           items:
             $ref: '#/components/schemas/Healthcheck'
+          description: список конфигураций хелсчека
 
     Zone:
+      description: |
+        Зона Безопасности
       type: object
+      required:
+        - name
       properties:
         id:
           type: integer
           readOnly: true
           description: уникальный ID Зоны Безопасности
         name:
-          required: true
           type: string
           description: имя Зоны Безопасности
 

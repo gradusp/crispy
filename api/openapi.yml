@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: LBOS Controller API
   description: |
-    API Контроллера Сервиса "Больше, чем Балансировка Нагрузки" типа Open Source
+    API Контроллера Сервиса "Больше, чем Балансировка Нагрузки" типа Open Source.
+
+    Иерархия сущностей следующая: `zone` => `cluster` => `service`
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -131,10 +133,13 @@ paths:
     post:
       tags:
         - services
-      summary: 'aaa'
+      summary: 'создать Сервис Балансировки'
       operationId: serviceAdd
       requestBody:
-        description: 'bbb'
+        description: |
+          При создании Сервиса Балансировки, необходимо указывать `clusterId` существующего Кластера Баласировки.
+
+          **IMPORTANT**: В текущей версии API дочерние сущности сервиса (`[]real` и `[]healthcheck`) создаются из общего JSON. Если будет допущена ошибка конфигурации в каком-либо месте, единственная возможность исправить ошибку - удалить некорректный Сервис Балансировки и создать его заново.
         content:
           application/json:
             schema:
@@ -147,7 +152,7 @@ paths:
     get:
       tags:
         - services
-      summary: ''
+      summary: 'получить список всех Сервисов Балансировки'
       operationId: serviceGetAll
       responses:
         "200":
@@ -164,7 +169,7 @@ paths:
     get:
       tags:
         - services
-      summary: ''
+      summary: 'получить Сервис Блансировки'
       operationId: serviceGetById
       parameters:
         - name: serviceId
@@ -186,12 +191,13 @@ paths:
     delete:
       tags:
         - services
-      summary: ''
+      summary: 'удалить Сервис Балансировки'
       operationId: serviceDeleteById
       parameters:
         - name: serviceId
           in: path
-          description: ''
+          description: |
+            **IMPORTANT**: Удаление Сервиса Балансировки удаляет также все связанные `[]real` и `[]healthcheck`
           required: true
           schema:
             type: string

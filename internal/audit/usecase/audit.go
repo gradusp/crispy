@@ -3,9 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/gradusp/crispy/internal/model"
-
 	"github.com/gradusp/crispy/internal/audit"
+	"github.com/gradusp/crispy/internal/model"
 )
 
 type AuditUsecase struct {
@@ -23,5 +22,9 @@ func (auc AuditUsecase) Create(ctx context.Context, who, what string) {
 		Who:  who,
 		What: what,
 	}
+	auc.auditRepo.Create(ctx, a)
+}
+
+func (auc AuditUsecase) Notify(ctx context.Context, a *model.Audit) {
 	auc.auditRepo.Create(ctx, a)
 }

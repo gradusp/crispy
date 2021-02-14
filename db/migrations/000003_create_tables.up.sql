@@ -38,8 +38,6 @@ create table if not exists controller.reals
     service_id uuid not null,
     addr       inet not null,
     port       int  not null,
-    hc_addr    inet,
-    hc_port    int,
     primary key (id),
     unique (addr, port),
     foreign key (service_id) references controller.services (id) on delete cascade
@@ -61,8 +59,10 @@ create table if not exists controller.healthchecks
 
 create table if not exists controller.audit
 (
-    id   uuid                 default gen_random_uuid(),
-    time timestamptz not null default now(),
-    what text        not null,
-    who  text        not null
+    id     uuid                 default gen_random_uuid(),
+    time   timestamptz not null default now(),
+    entity text        not null,
+    action text        not null,
+    who    text        not null,
+    what   json        not null
 );

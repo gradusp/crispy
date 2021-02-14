@@ -11,41 +11,41 @@ type ZoneUsecase struct {
 	zoneRepo zone.Repository
 }
 
-func NewZoneUseCase(zoneRepo zone.Repository) *ZoneUsecase {
+func NewZoneUsecase(zoneRepo zone.Repository) *ZoneUsecase {
 	return &ZoneUsecase{
 		zoneRepo: zoneRepo,
 	}
 }
 
-func (szuc ZoneUsecase) Create(ctx context.Context, name string) (*model.Zone, error) {
-	sz := &model.Zone{
+func (zuc ZoneUsecase) Create(ctx context.Context, name string) (*model.Zone, error) {
+	z := &model.Zone{
 		Name: name,
 	}
-	return szuc.zoneRepo.Create(ctx, sz)
+	return zuc.zoneRepo.Create(ctx, z)
 }
 
-func (szuc ZoneUsecase) Get(ctx context.Context) ([]*model.Zone, error) {
-	return szuc.zoneRepo.Get(ctx)
+func (zuc ZoneUsecase) Get(ctx context.Context) ([]*model.Zone, error) {
+	return zuc.zoneRepo.Get(ctx)
 }
 
-func (szuc ZoneUsecase) GetByID(ctx context.Context, id string) (*model.Zone, error) {
+func (zuc ZoneUsecase) GetByID(ctx context.Context, id string) (*model.Zone, error) {
 	sz := &model.Zone{
 		ID: id,
 	}
-	return szuc.zoneRepo.GetByID(ctx, sz)
+	return zuc.zoneRepo.GetByID(ctx, sz)
 }
 
-func (szuc ZoneUsecase) Update(ctx context.Context, id, name string) error {
+func (zuc ZoneUsecase) Update(ctx context.Context, id, name string) error {
 	sz := &model.Zone{
 		ID:   id,
 		Name: name,
 	}
-	return szuc.zoneRepo.Update(ctx, sz)
+	return zuc.zoneRepo.Update(ctx, sz)
 }
 
-func (szuc ZoneUsecase) Delete(ctx context.Context, id string) error {
+func (zuc ZoneUsecase) Delete(ctx context.Context, id string) error {
 	sz := &model.Zone{
 		ID: id,
 	}
-	return szuc.zoneRepo.Delete(ctx, sz)
+	return zuc.zoneRepo.Delete(ctx, sz)
 }

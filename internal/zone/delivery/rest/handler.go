@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,12 +26,12 @@ func NewHandler(zuc zone.Usecase, auc audit.Usecase) *Handler {
 	}
 }
 
-type szInput struct {
+type zoneInput struct {
 	Name string `json:"name" binding:"required"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
-	var req szInput                          // TODO: test case should test garbage json on input
+	var req zoneInput                        // TODO: test case should test garbage json on input
 	if err := c.BindJSON(&req); err != nil { // FIXME: produces error event @ gin.logger which is not obvious
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -58,19 +59,22 @@ func (h *Handler) Create(c *gin.Context) {
 		}
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
 	j, err := json.Marshal(&res)
 	if err != nil {
 		panic(err)
 	}
-	what := `{"op":"create","obj":"zone","dsc":` + string(j) + `}`
-	h.auc.Create(c.Request.Context(), who, what)
+	a := &model.Audit{
+		Entity: "zone",
+		Action: "create",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   string(j),
+	}
+	res.Observable = model.Observable{Subs: new(list.List)}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
-	c.JSON(http.StatusCreated, &model.Zone{
-		ID:   res.ID,
-		Name: res.Name,
-	})
+	c.JSON(http.StatusCreated, res)
 }
 
 func (h *Handler) Get(c *gin.Context) {
@@ -107,7 +111,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 }
 
 func (h *Handler) Update(c *gin.Context) {
-	var req szInput
+	var req zoneInput
 	if err := c.BindJSON(&req); err != nil { // FIXME: produces error event @ gin.logger which is not obvious
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,
@@ -135,10 +139,18 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	what := fmt.Sprintf(`{"op":"update","obj":"zone","dsc":{"id":"%s","name":"%s"}}`, c.Param("id"), req.Name)
-	h.auc.Create(c.Request.Context(), who, what)
+	res := &model.Zone{
+		Observable: model.Observable{Subs: new(list.List)},
+	}
+	a := &model.Audit{
+		Entity: "zone",
+		Action: "update",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   fmt.Sprintf(`{"id":"%s","name":"%s"}`, c.Param("id"), req.Name),
+	}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
 	c.Status(http.StatusOK)
 }
@@ -163,10 +175,18 @@ func (h *Handler) Delete(c *gin.Context) {
 		}
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	what := fmt.Sprintf(`{"op":"delete","obj":"zone","dsc":{"id":"%s"}}`, c.Param("id"))
-	h.auc.Create(c.Request.Context(), who, what)
+	res := &model.Zone{
+		Observable: model.Observable{Subs: new(list.List)},
+	}
+	a := &model.Audit{
+		Entity: "zone",
+		Action: "delete",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   fmt.Sprintf(`{"id":"%s"}`, c.Param("id")),
+	}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
 	c.Status(http.StatusNoContent)
 }

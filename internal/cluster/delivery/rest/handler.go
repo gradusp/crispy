@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"container/list"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/cluster"
+	"github.com/gradusp/crispy/internal/model"
 )
 
 type Handler struct {
@@ -61,14 +63,20 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
 	j, err := json.Marshal(&res)
 	if err != nil {
 		panic(err)
 	}
-	what := `{"op":"create","obj":"cluster","dsc":` + string(j) + `}`
-	h.auc.Create(c.Request.Context(), who, what)
+	a := &model.Audit{
+		Entity: "cluster",
+		Action: "create",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   string(j),
+	}
+	res.Observable = model.Observable{Subs: new(list.List)}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
 	c.JSON(http.StatusCreated, res)
 }
@@ -139,10 +147,18 @@ func (h *Handler) Update(c *gin.Context) {
 		}
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	what := fmt.Sprintf(`{"op":"update","obj":"cluster","dsc":{"id":"%s","name":"%s","capacity":%d}}`, c.Param("id"), req.Name, req.Capacity)
-	h.auc.Create(c.Request.Context(), who, what)
+	res := &model.Cluster{
+		Observable: model.Observable{Subs: new(list.List)},
+	}
+	a := &model.Audit{
+		Entity: "cluster",
+		Action: "update",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   fmt.Sprintf(`{"id":"%s","name":"%s","capacity":%d}`, c.Param("id"), req.Name, req.Capacity),
+	}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
 	c.Status(http.StatusOK)
 }
@@ -167,10 +183,18 @@ func (h *Handler) Delete(c *gin.Context) {
 		}
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	what := fmt.Sprintf(`{"op":"delete","obj":"cluster","dsc":{"id":"%s"}}`, c.Param("id"))
-	h.auc.Create(c.Request.Context(), who, what)
+	res := &model.Cluster{
+		Observable: model.Observable{Subs: new(list.List)},
+	}
+	a := &model.Audit{
+		Entity: "cluster",
+		Action: "delete",
+		Who:    c.Request.RemoteAddr + " -- " + c.Request.UserAgent(),
+		What:   fmt.Sprintf(`{"id":"%s"}`, c.Param("id")),
+	}
+	res.Subscribe(h.auc)
+	res.Fire(c.Request.Context(), a)
+	res.Unsubscribe(h.auc)
 
 	c.Status(http.StatusNoContent)
 }

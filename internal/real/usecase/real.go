@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/gradusp/crispy/internal/model"
@@ -18,21 +19,40 @@ func NewUsecase(r real.Repository) *RealUsecase {
 	}
 }
 
-func (ruc RealUsecase) Create(ctx context.Context, sid string, a, hca net.IP, p, hcp int) (*model.Real, error) {
-	s := &model.Service{ID: sid}
-
+func (ruc RealUsecase) Create(ctx context.Context, sid string, a net.IP, p int) (*model.Real, error) {
 	r := &model.Real{
-		Addr:            a,
-		Port:            p,
-		HealthcheckAddr: hca,
-		HealthcheckPort: hcp,
+		Addr:      a,
+		Port:      p,
+		ServiceID: sid,
 	}
 
 	return ruc.r.Create(ctx, r)
 }
 
-func (ruc RealUsecase) Delete(ctx context.Context, id string) error {
-	r := &model.Real{ID: id}
+// TODO: implement checks for SQL INJECTIONS (regexp?)
+// TODO: check 'sid' for UUID
+// TODO: check 'a' for net.IP
+func (ruc RealUsecase) Get(ctx context.Context, sid, a string) ([]*model.Real, error) {
+	switch {
+	case sid != "" && a != "":
+		return nil, real.ErrWrongQuery
+	case sid != "":
+		q := fmt.Sprintf("where service_id='%s'", sid)
+		return ruc.r.GetByField(ctx, q)
+	case a != "":
+		q := fmt.Sprintf("where addr='%s'", net.ParseIP(a))
+		return ruc.r.GetByField(ctx, q)
+	default:
+		return ruc.r.GetByField(ctx, "")
+	}
+}
 
-	return ruc.rRepo.Delete(ctx, r)
+func (ruc RealUsecase) GetByID(ctx context.Context, rid string) (*model.Real, error) {
+	r := &model.Real{ID: rid}
+	return ruc.r.GetByID(ctx, r)
+}
+
+func (ruc RealUsecase) Delete(ctx context.Context, rid string) error {
+	r := &model.Real{ID: rid}
+	return ruc.r.Delete(ctx, r)
 }

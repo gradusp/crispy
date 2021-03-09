@@ -8,11 +8,10 @@ import (
 )
 
 type Usecase interface {
-	Create(ctx context.Context, sid string, a, hca net.IP, p, hcp int) (*model.Real, error)
+	Create(ctx context.Context, sid string, a net.IP, p int) (*model.Real, error)
 
-	//GetByBalancingService(ctx context.Context, id string) ([]*model.Real, error)
+	Get(ctx context.Context, sid, a string) ([]*model.Real, error)
+	GetByID(ctx context.Context, rid string) (*model.Real, error)
 
-	//UpdateHealthcheckAddress(ctx context.Context, id, hca string) error
-
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, rid string) error
 }

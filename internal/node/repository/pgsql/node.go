@@ -15,19 +15,19 @@ import (
 	"go.uber.org/zap"
 )
 
-type Repo struct {
+type PgRepo struct {
 	log  *zap.SugaredLogger
 	pool *pgxpool.Pool
 }
 
-func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *Repo {
-	return &Repo{
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *PgRepo {
+	return &PgRepo{
 		log:  l,
 		pool: pool,
 	}
 }
 
-func (r Repo) Create(ctx context.Context, n *model.Node) (*model.Node, error) {
+func (r PgRepo) Create(ctx context.Context, n *model.Node) (*model.Node, error) {
 	c, err := r.pool.Acquire(ctx)
 	if err != nil {
 		r.log.Error(err)
@@ -65,33 +65,35 @@ func (r Repo) Create(ctx context.Context, n *model.Node) (*model.Node, error) {
 	return n, nil
 }
 
-//func (r Repo) GetAll(ctx context.Context) ([]*model.Node, error) {
-//	c, err := r.pool.Acquire(ctx)
-//	if err != nil {
-//		r.log.Error(err)
-//		return nil, err
-//	}
-//	defer c.Release()
-//
-//	var reals []*model.Real
-//	query := `select id, service_id, addr, port from controller.reals;`
-//	if rows, err := c.Query(ctx, query); err != nil {
-//		r.log.Error("reals can't be selected", err) // TODO: better error handling
-//		return nil, err
-//	} else {
-//		for rows.Next() {
-//			var r model.Real
-//			if err := rows.Scan(&r.ID, &r.ServiceID, &r.Addr, &r.Port); err != nil {
-//				return nil, err
-//			} else {
-//				reals = append(reals, &r)
-//			}
-//		}
-//	}
-//	return reals, nil
-//}
+func (r PgRepo) GetByField(ctx context.Context, where string) ([]*model.Node, error) {
+	var nodes []*model.Node
+	c, err := r.pool.Acquire(ctx)
+	if err != nil {
+		r.log.Error(err)
+		return nil, err
+	}
+	defer c.Release()
 
-func (r Repo) GetByID(ctx context.Context, n *model.Node) (*model.Node, error) {
+	q := fmt.Sprintf("select id, cluster_id, addr, hostname from controller.nodes %s;", where)
+	rows, err := c.Query(ctx, q)
+	if err != nil {
+		r.log.Error("nodes can't be selected ", err) // TODO: better error handling
+		return nil, err
+	}
+
+	for rows.Next() {
+		var n model.Node
+		err = rows.Scan(&n.ID, &n.ClusterID, &n.Addr, &n.Hostname)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, &n)
+	}
+
+	return nodes, nil
+}
+
+func (r PgRepo) GetByID(ctx context.Context, n *model.Node) (*model.Node, error) {
 	c, err := r.pool.Acquire(ctx)
 	if err != nil {
 		r.log.Error(err)
@@ -117,94 +119,7 @@ func (r Repo) GetByID(ctx context.Context, n *model.Node) (*model.Node, error) {
 	return n, nil
 }
 
-func (r Repo) GetNodeByField(ctx context.Context, where string) ([]*model.Node, error) {
-	var nodes []*model.Node
-	c, err := r.pool.Acquire(ctx)
-	if err != nil {
-		r.log.Error(err)
-		return nil, err
-	}
-	defer c.Release()
-
-	q := fmt.Sprintf("select id, cluster_id, addr, hostname from controller.nodes %s;", where)
-	fmt.Printf("\n%s\n\n", q)
-	rows, err := c.Query(ctx, q)
-	if err != nil {
-		r.log.Error("nodes can't be selected ", err) // TODO: better error handling
-		return nil, err
-	}
-
-	for rows.Next() {
-		var n model.Node
-		err = rows.Scan(&n.ID, &n.ClusterID, &n.Addr, &n.Hostname)
-		if err != nil {
-			return nil, err
-		}
-		nodes = append(nodes, &n)
-	}
-
-	return nodes, nil
-}
-
-// TODO: refactor GetByAddr & GetByServiceID
-//func (r Repo) GetByAddr(ctx context.Context, a string) ([]*model.Node, error) {
-//	c, err := r.pool.Acquire(ctx)
-//	if err != nil {
-//		r.log.Error(err)
-//		return nil, err
-//	}
-//	defer c.Release()
-//
-//	query := `select id, service_id, addr, port from controller.reals where addr=$1;`
-//	rows, err := c.Query(ctx, query, a)
-//	if err != nil {
-//		r.log.Error("reals can't be selected", err) // TODO: better error handling
-//		return nil, err
-//	}
-//
-//	var reals []*model.Real
-//	for rows.Next() {
-//		var r model.Real
-//		err = rows.Scan(&r.ID, &r.ServiceID, &r.Addr, &r.Port)
-//		if err != nil {
-//			return nil, err
-//		}
-//		reals = append(reals, &r)
-//	}
-//
-//	return reals, nil
-//}
-
-// TODO: refactor GetByAddr & GetByServiceID
-//func (r Repo) GetByClusterID(ctx context.Context, cid string) ([]*model.Node, error) {
-//	c, err := r.pool.Acquire(ctx)
-//	if err != nil {
-//		r.log.Error(err)
-//		return nil, err
-//	}
-//	defer c.Release()
-//
-//	query := `select id, service_id, addr, port from controller.reals where service_id=$1;`
-//	rows, err := c.Query(ctx, query, sid)
-//	if err != nil {
-//		r.log.Error("reals can't be selected", err) // TODO: better error handling
-//		return nil, err
-//	}
-//
-//	var reals []*model.Real
-//	for rows.Next() {
-//		var r model.Real
-//		err = rows.Scan(&r.ID, &r.ServiceID, &r.Addr, &r.Port)
-//		if err != nil {
-//			return nil, err
-//		}
-//		reals = append(reals, &r)
-//	}
-//
-//	return reals, nil
-//}
-
-func (r Repo) Delete(ctx context.Context, n *model.Node) error {
+func (r PgRepo) Delete(ctx context.Context, n *model.Node) error {
 	c, err := r.pool.Acquire(ctx)
 	if err != nil {
 		r.log.Error(err)

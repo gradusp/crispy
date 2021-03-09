@@ -38,12 +38,12 @@ func (u Usecase) Get(ctx context.Context, cid, a string) ([]*model.Node, error) 
 		return nil, node.ErrWrongQuery
 	case cid != "":
 		q := fmt.Sprintf("where cluster_id='%s'", cid)
-		return u.r.GetNodeByField(ctx, q)
+		return u.r.GetByField(ctx, q)
 	case a != "":
 		q := fmt.Sprintf("where addr='%s'", net.ParseIP(a))
-		return u.r.GetNodeByField(ctx, q)
+		return u.r.GetByField(ctx, q)
 	default:
-		return u.r.GetNodeByField(ctx, "")
+		return u.r.GetByField(ctx, "")
 	}
 }
 

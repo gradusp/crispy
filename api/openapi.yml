@@ -1,17 +1,50 @@
 openapi: 3.0.3
 info:
-  title: LBOS Controller API
+  title: crispy
   description: |
     API Контроллера Сервиса "Больше, чем Балансировка Нагрузки" типа Open Source.
 
-    Иерархия сущностей следующая: `zone` => `cluster` => `service`
+    Для начала работы с сервисом, важно убедиться, что заполнены справочники:
+    1. `zones`
+    1. `clusters`, при создании требует указать `zoneId`
+    1. `nodes`, при создании требует указать `clusterId`
+
+    После этого возможно создавать и настраивать `services`,
+    каждый при создании требует указать `clusterId`.
+
+    Когда `services` созданы, для каждого могут быть заведены `reals` и `healthchecks`,
+    для каждого из них при создании необходим `serviceId`.
+
+    ---
+
+    ## Глоссарий
+    ```
+    zones        — Зона Безопасности <...>
+    clusters     — Кластер Балансировки <...>
+    nodes        — Нода <...>
+    services     — Сервис Балансировки <...>
+    reals        — Реал <...>
+    healthchecks — Хелсчек <...>
+    ```
+
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   version: 'v1.0.0'
+externalDocs:
+  url: https://sbtatlas.sigma.sbrf.ru/wiki/display/CRISPY
+  description: Документация
 tags:
+  - name: configs
+    description: методы чтения Конфигов
   - name: services
     description: методы работы с Сервисами Балансировки
+  - name: reals
+    description: методы работы с Реалами
+  - name: healthchecks
+    description: методы работы с Хелсчеками
+  - name: nodes
+    description: методы работы с Нодами
   - name: clusters
     description: методы работы с Кластерами Балансировки
   - name: zones
@@ -19,6 +52,21 @@ tags:
 servers:
   - url: /api/v1
 paths:
+  /configs/{nodeId}:
+    get:
+      tags:
+        - configs
+      summary: получить список всех Сервисов Балансировки для данной Ноды
+      operationId: listConfigsForNode
+      responses:
+        "200":
+          description: массив объектов типа Конфиг
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Config"
   /clusters:
     post:
       tags:
@@ -42,8 +90,6 @@ paths:
           $ref: "#/components/responses/AlreadyExist"
         "400":
           description: некорректный ввод
-        "401":
-          $ref: "#/components/responses/Unauthorized"
     get:
       tags:
         - clusters
@@ -58,8 +104,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Cluster"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
   /clusters/{clusterId}:
     get:
       tags:
@@ -81,8 +125,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Cluster"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
     put:
       tags:
         - clusters
@@ -129,6 +171,271 @@ paths:
           description: некорректный ввод
           content: { }
 
+  /nodes:
+    post:
+      tags:
+        - nodes
+      summary: создать Ноду
+      operationId: nodeAdd
+      requestBody:
+        description: qqq # TODO: При передаче JSON объекта c `name` и `zoneId`, произойдёт создание новой записи в БД с автогенерацией `id`.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Node"
+      responses:
+        "201":
+          description: ответ с результирующим объектом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+        "303":
+          $ref: "#/components/responses/AlreadyExist"
+        "400":
+          description: некорректный ввод
+    get:
+      tags:
+        - nodes
+      summary: получить список всех Нод, либо выбрать их по критериям
+      description: В query может быть использован максимум один из вариантов. При указании сразу двух – ошибка 400.
+      operationId: findNode
+      parameters:
+        - name: clusterId
+          in: query
+          description: UUID Кластера Балансировки
+#        - name: addr # TODO
+#          in: query
+#          description: IPv4 адрес Ноды
+#        - name: hostname # TODO
+#          in: query
+#          description: hostname Ноды
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Node'
+        "400":
+          description: некорректный ввод
+          content: { }
+  /nodes/{nodeId}:
+    get:
+      tags:
+        - nodes
+      summary: получить Ноду
+      operationId: nodeGetById
+      parameters:
+        - name: nodeId
+          in: path
+          description: ID Ноды
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: объект типа Нода
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Node"
+    delete:
+      tags:
+        - nodes
+      summary: удалить Ноду
+      operationId: nodeDelete
+      parameters:
+        - name: nodeId
+          in: path
+          description: ID Ноды
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: контента нет
+          content: { }
+        "400":
+          description: некорректный ввод
+          content: { }
+
+  /reals:
+    post:
+      tags:
+        - reals
+      summary: создать Реал
+      operationId: realAdd
+      requestBody:
+        description: |
+          Для создания Реала требуется указать UUID Сервиса Балансировки (`serviceId`),
+          а также уникальное сочетание `addr` и `port`.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Real"
+      responses:
+        "201":
+          description: ответ с успешно созданым Реалом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Real"
+        "303":
+          $ref: "#/components/responses/AlreadyExist"
+        "400":
+          description: некорректный ввод
+    get:
+      tags:
+        - reals
+      summary: получить список всех Реалов, либо выбрать их по критериям
+      description: В query может быть использован максимум один из вариантов. При указании сразу двух – ошибка 400.
+      operationId: findReal
+      parameters:
+        - name: serviceId
+          in: query
+          description: UUID Сервиса Балансировки
+        - name: addr
+          in: query
+          description: IP адрес Реала
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Real'
+        "400":
+          description: некорректный ввод
+          content: { }
+  /reals/{realId}:
+    get:
+      tags:
+        - reals
+      summary: получить Реал
+      operationId: realGetById
+      parameters:
+        - name: realId
+          in: path
+          description: ID Реала
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: объект типа Реал
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Real"
+    delete:
+      tags:
+        - reals
+      summary: удалить Реал
+      operationId: realDelete
+      parameters:
+        - name: realId
+          in: path
+          description: ID Реала
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: контента нет
+          content: { }
+        "400":
+          description: некорректный ввод
+          content: { }
+
+#  /healthchecks/findByService:
+#    get:
+#      tags:
+#        - healthchecks
+#      summary: получить Хелсчеки всех типов для Сервиса Балансировки
+#      operationId: healthchecksByService
+#      parameters:
+#        - name: "id"
+#          in: query
+#          description: UUID Сервиса Балансировки
+#          required: true
+#          schema:
+#            type: string
+#            format: uuid
+#      responses:
+#        "200":
+#          description: "successful operation"
+#          content:
+#            application/json:
+#              schema:
+#                type: object
+#                properties:
+#                  http:
+#                    type: array
+#                    items:
+#                      $ref: '#/components/schemas/HealthcheckHTTP'
+#                  tcp:
+#                    type: array
+#                    items:
+#                      $ref: '#/components/schemas/HealthcheckTCP'
+#                  udp:
+#                    type: array
+#                    items:
+#                      $ref: '#/components/schemas/HealthcheckUDP'
+#                  icmp:
+#                    type: array
+#                    items:
+#                      $ref: '#/components/schemas/HealthcheckICMP'
+#        "400":
+#          description: некорректный ввод
+#          content: { }
+  /healthchecks/http:
+    post:
+      tags:
+        - healthchecks
+      summary: создать Хелсчек типа HTTP
+      operationId: healthcheckHTTPAdd
+      requestBody:
+        description: qqq # TODO:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealthcheckHTTP"
+      responses:
+        "201":
+          description: ответ с результирующим объектом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthcheckHTTP"
+        "303":
+          $ref: "#/components/responses/AlreadyExist"
+        "400":
+          description: некорректный ввод
+  /healthchecks/http/{healthcheckId}:
+    put:
+      tags:
+        - healthchecks
+      summary: получить список всех Хелсчеков типа HTTP
+      operationId: healthcheckHTTPGetAll
+      responses:
+        "200":
+          description: массив объектов Хелсчек типа HTTP
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthcheckHTTP"
+
   /services:
     post:
       tags:
@@ -138,8 +445,6 @@ paths:
       requestBody:
         description: |
           При создании Сервиса Балансировки, необходимо указывать `clusterId` существующего Кластера Баласировки.
-
-          **IMPORTANT**: В текущей версии API дочерние сущности сервиса (`[]real` и `[]healthcheck`) создаются из общего JSON. Если будет допущена ошибка конфигурации в каком-либо месте, единственная возможность исправить ошибку - удалить некорректный Сервис Балансировки и создать его заново.
         content:
           application/json:
             schema:
@@ -147,8 +452,6 @@ paths:
       responses:
         "400":
           description: некорректный ввод
-        "401":
-          $ref: "#/components/responses/Unauthorized"
     get:
       tags:
         - services
@@ -163,8 +466,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Service"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
   /services/{serviceId}:
     get:
       tags:
@@ -186,8 +487,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Service"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
     delete:
       tags:
         - services
@@ -209,8 +508,6 @@ paths:
         "400":
           description: некорректный ввод
           content: { }
-        "401":
-          $ref: "#/components/responses/Unauthorized"
 
   /zones:
     post:
@@ -235,8 +532,6 @@ paths:
           $ref: "#/components/responses/AlreadyExist"
         "400":
           description: некорректный ввод
-        "401":
-          $ref: "#/components/responses/Unauthorized"
 
     get:
       tags:
@@ -253,8 +548,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Zone"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
   /zones/{zoneId}:
     get:
       tags:
@@ -276,8 +569,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Zone"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
     put:
       tags:
         - zones
@@ -325,14 +616,28 @@ paths:
         "400":
           description: некорректный ввод
           content: { }
-        "401":
-          $ref: "#/components/responses/Unauthorized"
 
 components:
   schemas:
+    Config:
+      description: |
+        Конфиг —
+      allOf:
+        - $ref: '#/components/schemas/Service'
+        - type: object
+          properties:
+            zoneId:
+              type: string
+              format: uuid
+              description: qq # TODO
+            clusterId:
+              type: string
+              format: uuid
+              description: qq # TODO
+
     Cluster:
       description: |
-        Кластер Балансировки обозначает группу физических серверов либо виртуальных машин, обеспечивающих отказоустойчивость спланированных на такой Кластер Сервисов Балансировки.
+        Кластер Балансировки — группа физических серверов либо виртуальных машин, обеспечивающих отказоустойчивость спланированных на такой Кластер Сервисов Балансировки.
       type: object
       required:
         - name
@@ -358,12 +663,19 @@ components:
           type: number
           readOnly: true
           description: текущая утилизация (вычисляемое значение)
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Node'
+          readOnly: true
+          description: Ноды, входящие в Кластер Балансировки
 
-    Healthcheck:
+    HealthcheckICMP:
       description: |
         Хелсчек -- описание механизма и параметров проверки для каждого сервера, куда производится балансировки Сервисом Балансировки
       type: object
       required:
+        - addr
         - helloTimer
         - responseTimer
         - aliveThreshold
@@ -372,7 +684,7 @@ components:
         - hysteresis
       properties:
         id:
-          type: string
+          type: number
           format: uuid
           readOnly: true
         helloTimer:
@@ -389,16 +701,85 @@ components:
           description: порог проваленных последовательно проверок для исключения из балансировки
         quorum:
           type: number
-          description: кворум
+          description: кворум # FIXME: add details
         hysteresis:
           type: number
-          description: гистере́зис
+          description: гистере́зис # FIXME: add details
+        addr:
+          type: string
+          format: ipv4
+          description: ip адрес, куда производится healthcheck обращение
+
+    HealthcheckTCP:
+      allOf:
+        - $ref: '#/components/schemas/HealthcheckICMP'
+        - type: object
+          required:
+            - port
+          properties:
+            port:
+              type: number
+              description: порт, куда производится healthcheck обращение
+
+    HealthcheckUDP:
+      allOf:
+        - $ref: '#/components/schemas/HealthcheckICMP'
+        - type: object
+          required:
+            - port
+          properties:
+            port:
+              type: number
+              description: порт, куда производится healthcheck обращение
+
+    HealthcheckHTTP:
+      allOf:
+        - $ref: '#/components/schemas/HealthcheckICMP'
+        - type: object
+          required:
+            - port
+            - uri
+            - responseCode
+          properties:
+            port:
+              type: number
+              description: порт, куда производится healthcheck обращение
+            uri:
+              type: string
+              description: uri, куда производится healthcheck обращение
+            responseCode:
+              type: number
+              description: код ответа http сервера ожидаемый для "здорового" ответа
+
+    Node:
+      description: |
+        Нода -- сервер, обеспечивающий балансировку и входящий в один из Кластеров Балансировки.
+      type: object
+      required:
+        - addr
+      properties:
+        id:
+          type: number
+          readOnly: true
+          description: уникальный id Ноды
+        clusterId:
+          type: string
+          format: uuid
+          description: id Кластера Балансировки, в который входит Нода
+        addr:
+          type: string
+          format: ipv4
+          description: ip адрес Ноды
+        hostname:
+          type: string
+          description: dns имя хоста
 
     Real:
       description: |
-        Сервер, на который производится балансировка Сервисом Балансировки. Значения `addr` + `port` образуют уникальный кортеж и не могут повторяться.
+        Реал -- сервер, на который производится балансировка Сервисом Балансировки. Значения `addr` + `port` образуют уникальный кортеж и не могут повторяться.
       type: object
       required:
+        - serviceId
         - addr
         - port
       properties:
@@ -406,14 +787,18 @@ components:
           type: string
           format: uuid
           readOnly: true
-          description: уникальный ID сервера, куда производится балансировка
+          description: уникальный id Реала
+        serviceId:
+          type: string
+          format: uuid
+          description: uuid Сервиса Балансировки
         addr:
           type: string
           format: ipv4
-          description: ip адрес сервера, куда производится балансировка
+          description: ip адрес Реала
         port:
           type: number
-          description: порт сервера, куда производится балансировка
+          description: порт Реала
 
     Service:
       description: |
@@ -445,9 +830,6 @@ components:
           type: string
           enum: [ nat, tunnel, gre-tunnel ]
           description: тип маршрутизации
-        bandwidth:
-          type: number
-          description: величина требуемого резерва полосы пропускания
         proto:
           type: string
           enum: [ tcp, udp ]
@@ -459,15 +841,24 @@ components:
         port:
           type: number
           description: порт Сервиса Балансировки
+        bandwidth:
+          type: number
+          description: величина требуемого резерва полосы пропускания
         reals:
           type: array
+          readOnly: true
           items:
             $ref: '#/components/schemas/Real'
           description: список адресов, на которые производится балансировка
         healthchecks:
           type: array
+          readOnly: true
           items:
-            $ref: '#/components/schemas/Healthcheck'
+            anyOf:
+              - $ref: '#/components/schemas/HealthcheckHTTP'
+              - $ref: '#/components/schemas/HealthcheckTCP'
+              - $ref: '#/components/schemas/HealthcheckUDP'
+              - $ref: '#/components/schemas/HealthcheckICMP'
           description: список конфигураций хелсчека
 
     Zone:
@@ -478,21 +869,15 @@ components:
         - name
       properties:
         id:
-          type: integer
+          type: string
+          format: uuid
           readOnly: true
-          description: уникальный ID Зоны Безопасности
+          description: уникальный id Зоны Безопасности
         name:
           type: string
           description: имя Зоны Безопасности
 
   responses:
-    Unauthorized:
-      description: ключ API отсутствует или неверный
-      headers:
-        LBOS_API_KEY:
-          description: auth header
-          schema:
-            type: string
     AlreadyExist:
       description: объект уже существует
       headers:
@@ -501,12 +886,3 @@ components:
           example: asd
           schema:
             type: string
-
-  securitySchemes:
-    api_key:
-      type: apiKey
-      in: header
-      name: LBOS_API_KEY
-
-security:
-  - api_key: [ ]

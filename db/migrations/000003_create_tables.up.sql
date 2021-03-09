@@ -45,14 +45,17 @@ create table if not exists controller.reals
 
 create table if not exists controller.healthchecks
 (
-    id              uuid default gen_random_uuid(),
-    service_id      uuid,
+    id              serial,
+    service_id      uuid not null,
+    type            text,
+    addr            inet not null,
     hello_timer     int,
     response_timer  int,
     alive_threshold int,
     dead_threshold  int,
     quorum          int,
     hysteresis      int,
+    attributes      hstore,
     primary key (id),
     foreign key (service_id) references controller.services (id) on delete cascade
 );

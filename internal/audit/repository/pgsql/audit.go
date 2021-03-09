@@ -16,7 +16,7 @@ type AuditRepo struct {
 	log  *zap.SugaredLogger
 }
 
-func NewAuditRepo(pool *pgxpool.Pool, log *zap.SugaredLogger) *AuditRepo {
+func NewPgRepo(pool *pgxpool.Pool, log *zap.SugaredLogger) *AuditRepo {
 	return &AuditRepo{
 		pool: pool,
 		log:  log,

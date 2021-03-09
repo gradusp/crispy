@@ -11,7 +11,7 @@ type AuditUsecase struct {
 	auditRepo audit.Repository
 }
 
-func NewAuditUsecase(ar audit.Repository) *AuditUsecase {
+func NewUsecase(ar audit.Repository) *AuditUsecase {
 	return &AuditUsecase{
 		auditRepo: ar,
 	}

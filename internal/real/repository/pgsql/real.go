@@ -2,11 +2,15 @@ package pgsql
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v4/pgxpool"
-	"go.uber.org/zap"
+	"errors"
+	"fmt"
 
 	"github.com/gradusp/crispy/internal/model"
+	real "github.com/gradusp/crispy/internal/real"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type RealPostgresRepo struct {
@@ -14,7 +18,7 @@ type RealPostgresRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewRealPostgresRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *RealPostgresRepo {
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *RealPostgresRepo {
 	return &RealPostgresRepo{
 		log:  l,
 		pool: pool,

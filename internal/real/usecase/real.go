@@ -9,12 +9,12 @@ import (
 )
 
 type RealUsecase struct {
-	rRepo real.Repository
+	r real.Repository
 }
 
-func NewRealUsecase(r real.Repository) *RealUsecase {
+func NewUsecase(r real.Repository) *RealUsecase {
 	return &RealUsecase{
-		rRepo: r,
+		r: r,
 	}
 }
 
@@ -28,7 +28,7 @@ func (ruc RealUsecase) Create(ctx context.Context, sid string, a, hca net.IP, p,
 		HealthcheckPort: hcp,
 	}
 
-	return ruc.rRepo.Create(ctx, s, r)
+	return ruc.r.Create(ctx, r)
 }
 
 func (ruc RealUsecase) Delete(ctx context.Context, id string) error {

@@ -9,12 +9,12 @@ import (
 )
 
 type ServiceUsecase struct {
-	serviceRepo service.Repository
+	r service.Repository
 }
 
-func NewServiceUsecase(sr service.Repository) *ServiceUsecase {
+func NewUsecase(r service.Repository) *ServiceUsecase {
 	return &ServiceUsecase{
-		serviceRepo: sr,
+		r: r,
 	}
 }
 
@@ -36,16 +36,16 @@ func (suc ServiceUsecase) Create(
 		ClusterID:     cid,
 	}
 
-	return suc.serviceRepo.Create(ctx, cl, bs)
+	return suc.r.Create(ctx, cl, bs)
 }
 
 func (suc ServiceUsecase) Get(ctx context.Context) ([]*model.Service, error) {
-	return suc.serviceRepo.Get(ctx)
+	return suc.r.Get(ctx)
 }
 
 func (suc ServiceUsecase) GetByID(ctx context.Context, id string) (*model.Service, error) {
 	s := &model.Service{ID: id}
-	return suc.serviceRepo.GetByID(ctx, s)
+	return suc.r.GetByID(ctx, s)
 }
 
 //func (suc ServiceUsecase) Update(ctx context.Context, id string) error {
@@ -54,5 +54,5 @@ func (suc ServiceUsecase) GetByID(ctx context.Context, id string) (*model.Servic
 
 func (suc ServiceUsecase) Delete(ctx context.Context, id string) error {
 	s := &model.Service{ID: id}
-	return suc.serviceRepo.Delete(ctx, s)
+	return suc.r.Delete(ctx, s)
 }

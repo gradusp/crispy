@@ -8,12 +8,12 @@ import (
 )
 
 type HealthcheckUsecase struct {
-	hcRepo healthcheck.Repository
+	r healthcheck.Repository
 }
 
-func NewHealthcheckUsecase(r healthcheck.Repository) *HealthcheckUsecase {
+func NewUsecase(r healthcheck.Repository) *HealthcheckUsecase {
 	return &HealthcheckUsecase{
-		hcRepo: r,
+		r: r,
 	}
 }
 

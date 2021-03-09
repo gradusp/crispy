@@ -2,12 +2,13 @@ package pgsql
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v4/pgxpool"
-
-	"go.uber.org/zap"
+	"errors"
 
 	"github.com/gradusp/crispy/internal/model"
+	"github.com/gradusp/crispy/internal/service"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type ServiceRepo struct {
@@ -15,7 +16,7 @@ type ServiceRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewServiceRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ServiceRepo {
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ServiceRepo {
 	return &ServiceRepo{
 		log:  l,
 		pool: pool,

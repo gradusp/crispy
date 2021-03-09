@@ -8,12 +8,12 @@ import (
 )
 
 type ZoneUsecase struct {
-	zoneRepo zone.Repository
+	r zone.Repository
 }
 
-func NewZoneUsecase(zoneRepo zone.Repository) *ZoneUsecase {
+func NewUsecase(r zone.Repository) *ZoneUsecase {
 	return &ZoneUsecase{
-		zoneRepo: zoneRepo,
+		r: r,
 	}
 }
 
@@ -21,18 +21,18 @@ func (zuc ZoneUsecase) Create(ctx context.Context, name string) (*model.Zone, er
 	z := &model.Zone{
 		Name: name,
 	}
-	return zuc.zoneRepo.Create(ctx, z)
+	return zuc.r.Create(ctx, z)
 }
 
 func (zuc ZoneUsecase) Get(ctx context.Context) ([]*model.Zone, error) {
-	return zuc.zoneRepo.Get(ctx)
+	return zuc.r.Get(ctx)
 }
 
 func (zuc ZoneUsecase) GetByID(ctx context.Context, id string) (*model.Zone, error) {
 	sz := &model.Zone{
 		ID: id,
 	}
-	return zuc.zoneRepo.GetByID(ctx, sz)
+	return zuc.r.GetByID(ctx, sz)
 }
 
 func (zuc ZoneUsecase) Update(ctx context.Context, id, name string) error {
@@ -40,12 +40,12 @@ func (zuc ZoneUsecase) Update(ctx context.Context, id, name string) error {
 		ID:   id,
 		Name: name,
 	}
-	return zuc.zoneRepo.Update(ctx, sz)
+	return zuc.r.Update(ctx, sz)
 }
 
 func (zuc ZoneUsecase) Delete(ctx context.Context, id string) error {
 	sz := &model.Zone{
 		ID: id,
 	}
-	return zuc.zoneRepo.Delete(ctx, sz)
+	return zuc.r.Delete(ctx, sz)
 }

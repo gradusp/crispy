@@ -14,7 +14,7 @@ type HealthcheckPostgresRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewHealthcheckPostgresRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *HealthcheckPostgresRepo {
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *HealthcheckPostgresRepo {
 	return &HealthcheckPostgresRepo{
 		log:  l,
 		pool: pool,

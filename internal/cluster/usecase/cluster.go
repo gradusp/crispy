@@ -8,12 +8,12 @@ import (
 )
 
 type ClusterUsecase struct {
-	clusterRepo cluster.Repository
+	r cluster.Repository
 }
 
-func NewClusterUsecase(clusterRepo cluster.Repository) *ClusterUsecase {
+func NewUsecase(r cluster.Repository) *ClusterUsecase {
 	return &ClusterUsecase{
-		clusterRepo: clusterRepo,
+		r: r,
 	}
 }
 
@@ -27,18 +27,18 @@ func (cuc ClusterUsecase) Create(ctx context.Context, zid, name string, capacity
 		Capacity: capacity,
 	}
 
-	return cuc.clusterRepo.Create(ctx, z, c)
+	return cuc.r.Create(ctx, z, c)
 }
 
 func (cuc ClusterUsecase) Get(ctx context.Context) ([]*model.Cluster, error) {
-	return cuc.clusterRepo.Get(ctx)
+	return cuc.r.Get(ctx)
 }
 
 func (cuc ClusterUsecase) GetByID(ctx context.Context, id string) (*model.Cluster, error) {
 	c := &model.Cluster{
 		ID: id,
 	}
-	return cuc.clusterRepo.GetByID(ctx, c)
+	return cuc.r.GetByID(ctx, c)
 }
 
 func (cuc ClusterUsecase) Update(ctx context.Context, id, name string, capacity int64) error {
@@ -47,12 +47,12 @@ func (cuc ClusterUsecase) Update(ctx context.Context, id, name string, capacity 
 		Name:     name,
 		Capacity: capacity,
 	}
-	return cuc.clusterRepo.Update(ctx, c)
+	return cuc.r.Update(ctx, c)
 }
 
 func (cuc ClusterUsecase) Delete(ctx context.Context, id string) error {
 	c := &model.Cluster{
 		ID: id,
 	}
-	return cuc.clusterRepo.Delete(ctx, c)
+	return cuc.r.Delete(ctx, c)
 }

@@ -19,7 +19,7 @@ type ZonePostgresRepo struct {
 	pool *pgxpool.Pool
 }
 
-func NewZonePostgresRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ZonePostgresRepo {
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ZonePostgresRepo {
 	return &ZonePostgresRepo{
 		log:  l,
 		pool: pool,

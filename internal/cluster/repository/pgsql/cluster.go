@@ -20,7 +20,7 @@ type ClusterRepo struct {
 	log  *zap.SugaredLogger
 }
 
-func NewClusterRepo(pool *pgxpool.Pool, kv *api.KV, l *zap.SugaredLogger) *ClusterRepo {
+func NewPgRepo(pool *pgxpool.Pool, kv *api.KV, l *zap.SugaredLogger) *ClusterRepo {
 	return &ClusterRepo{
 		pool: pool,
 		kv:   kv,
@@ -137,6 +137,7 @@ from controller.clusters c
 where c.id=$1
 group by c.id, z.id;`
 
+	// TODO: refactor that -- cluster should not return zone as own part
 	var z model.Zone
 	if err = c.QueryRow(ctx, query, cl.ID).Scan(&cl.ID, &cl.Name, &cl.Capacity, &cl.Usage, &z.ID, &z.Name); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -219,7 +220,7 @@ func (cr *ClusterRepo) Delete(ctx context.Context, cl *model.Cluster) error {
 					"error_body", pgErr.Message,
 					"error_code", pgErr.Code,
 				)
-				return cluster.ErrHaveServices
+				return cluster.ErrHaveNodes
 			default:
 				cr.log.Errorw("issue with cluster on delete",
 					"error_body", pgErr.Message,

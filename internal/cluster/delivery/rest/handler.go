@@ -26,14 +26,14 @@ func NewHandler(uc cluster.Usecase, auc audit.Usecase) *Handler {
 	}
 }
 
-type request struct {
+type clusterInput struct {
 	Name     string `json:"name" binding:"required"`
 	ZoneID   string `json:"zoneId" binding:"required"`
 	Capacity int64  `json:"capacity" binding:"required"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
-	var req request
+	var req clusterInput
 	if err := c.BindJSON(&req); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusBadRequest,

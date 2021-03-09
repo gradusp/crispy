@@ -3,170 +3,164 @@ package pgsql
 import (
 	"context"
 	"errors"
+	"fmt"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 
 	"github.com/gradusp/crispy/internal/model"
 	"github.com/gradusp/crispy/internal/service"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"go.uber.org/zap"
 )
 
-type ServiceRepo struct {
+type PgRepo struct {
 	log  *zap.SugaredLogger
 	pool *pgxpool.Pool
 }
 
-func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *ServiceRepo {
-	return &ServiceRepo{
+func NewPgRepo(pool *pgxpool.Pool, l *zap.SugaredLogger) *PgRepo {
+	return &PgRepo{
 		log:  l,
 		pool: pool,
 	}
 }
 
-func (sr *ServiceRepo) Create(ctx context.Context, cl *model.Cluster, s *model.Service) (*model.Service, error) {
-	c, err := sr.pool.Acquire(ctx)
+func (r *PgRepo) Create(ctx context.Context, s *model.Service) (*model.Service, error) {
+	c, err := r.pool.Acquire(ctx)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return nil, err
 	}
 	defer c.Release()
+
+	if rowExists(ctx, c, "select id from controller.services where proto=$1 and addr=$2 and port=$3", s.Proto, s.Addr.To4(), s.Port) {
+		err := c.QueryRow(ctx, "select id from controller.services where proto=$1 and addr=$2 and port=$3;", s.Proto, s.Addr.To4(), s.Port).Scan(&s.ID) //nolint:lll
+		if err != nil {
+			r.log.Error(err) // TODO: better error handling
+			return nil, err
+		}
+		return s, service.ErrAlreadyExist
+	}
 
 	query := `
 insert into controller.services (cluster_id, routing_type, balancing_type, bandwidth, proto, addr, port)
 values ($1, $2, $3, $4, $5, $6, $7)
 returning id;`
-
-	if err := c.QueryRow(ctx, query, cl.ID,
-		s.RoutingType, s.BalancingType, s.Bandwidth, s.Proto, s.Addr.To4(), s.Port).Scan(&s.ID); err != nil {
-		sr.log.Error(err)
+	if err := c.
+		QueryRow(ctx, query, s.ClusterID, s.RoutingType, s.BalancingType, s.Bandwidth, s.Proto, s.Addr.To4(), s.Port).
+		Scan(&s.ID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch {
+			case pgErr.Code == "23505":
+				r.log.Debugw("service already exist",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code)
+				return s, service.ErrAlreadyExist
+			default:
+				r.log.Errorw("issue with service on create",
+					"error_body", pgErr.Message,
+					"error_code", pgErr.Code)
+				return nil, err
+			}
+		}
+		r.log.Error(err)
 		return nil, err
 	}
-
 	return s, nil
 }
 
-// TODO: implement
-func (sr *ServiceRepo) Get(ctx context.Context) ([]*model.Service, error) {
-	c, err := sr.pool.Acquire(ctx)
+func (r *PgRepo) Get(ctx context.Context) ([]*model.Service, error) {
+	var services []*model.Service
+
+	c, err := r.pool.Acquire(ctx)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return nil, err
 	}
 	defer c.Release()
 
-	query := `select id, cluster_id, routing_type, balancing_type, bandwidth, proto, addr, port from controller.services`
-	services, err := c.Query(ctx, query)
+	q := `select id, cluster_id, routing_type, balancing_type, bandwidth, proto, addr, port from controller.services`
+	rows, err := c.Query(ctx, q)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return nil, err
 	}
-
-	var r []*model.Service
-	for services.Next() {
+	for rows.Next() {
 		var s model.Service
-		err = services.Scan(&s.ID, &s.ClusterID, &s.RoutingType, &s.BalancingType, &s.Bandwidth, &s.Proto, &s.Addr, &s.Port)
+		err = rows.Scan(&s.ID, &s.ClusterID, &s.RoutingType, &s.BalancingType, &s.Bandwidth, &s.Proto, &s.Addr, &s.Port)
 		if err != nil {
-			sr.log.Error(err)
+			r.log.Error(err)
 			return nil, err
 		}
-		r = append(r, &s)
+		services = append(services, &s)
 	}
-	err = services.Err()
+	err = rows.Err()
 
-	return r, err
+	return services, err
 }
 
-func (sr *ServiceRepo) GetByID(ctx context.Context, s *model.Service) (*model.Service, error) {
-	c, err := sr.pool.Acquire(ctx)
+func (r *PgRepo) GetByID(ctx context.Context, s *model.Service) (*model.Service, error) {
+	c, err := r.pool.Acquire(ctx)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return nil, err
 	}
 	defer c.Release()
 
-	clusterRow := c.QueryRow(ctx,
-		"select cluster_id, routing_type, balancing_type, bandwidth, proto, addr, port from controller.services where id=$1;",
-		s.ID)
-	if err = clusterRow.Scan(&s.ClusterID, &s.RoutingType, &s.BalancingType, &s.Bandwidth, &s.Proto, &s.Addr, &s.Port); err != nil {
-		sr.log.Error(err)
-		return nil, err
-	}
-
-	var (
-		reals        []*model.Real
-		healthchecks []*model.Healthcheck
-	)
-
-	rq, err := c.Query(ctx, "select id, addr, port, hc_addr, hc_port from controller.reals where service_id=$1", s.ID)
-	if err != nil {
-		sr.log.Error("reals can't be selected", err)
-		return nil, err
-	}
-
-	for rq.Next() {
-		var r model.Real
-		err = rq.Scan(&r.ID, &r.Addr, &r.Port, &r.HealthcheckAddr, &r.HealthcheckPort)
-		if err != nil {
-			sr.log.Error(err)
-			return nil, err
+	query := `select cluster_id, routing_type, balancing_type, bandwidth, proto, addr, port from controller.services where id=$1;`
+	if err = c.QueryRow(ctx, query, s.ID).Scan(&s.ClusterID, &s.RoutingType, &s.BalancingType, &s.Bandwidth, &s.Proto, &s.Addr, &s.Port); err != nil { //nolint:lll
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, service.ErrNotFound
 		}
-		reals = append(reals, &r)
-	}
-	//err = rq.Err() // TODO
-
-	// FIXME: two queries can race for db conn
-	hcq, err := c.Query(ctx,
-		"select id, hello_timer, response_timer, alive_threshold, dead_threshold, quorum, hysteresis from controller.healthchecks where service_id=$1",
-		s.ID)
-	if err != nil {
-		sr.log.Error("healthchecks can't be selected: ", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			r.log.Errorw("can't get service",
+				"error_body", pgErr.Message,
+				"error_code", pgErr.Code,
+			)
+			return nil, service.ErrNotFound
+		}
 		return nil, err
 	}
-
-	for hcq.Next() {
-		var hc model.Healthcheck
-		err = hcq.Scan(&hc.ID, &hc.HelloTimer, &hc.ResponseTimer, &hc.AliveThreshold, &hc.DeadThreshold, &hc.Quorum, &hc.Hysteresis)
-		if err != nil {
-			sr.log.Error(err)
-			return nil, err
-		}
-		healthchecks = append(healthchecks, &hc)
-	}
-	//err = hcq.Err() // TODO
-
-	//if err = c.QueryRow(ctx, "select id, name from controller.clusters where id=$1", s.ClusterID).Scan(&s.Cluster.ID, &s.Cluster.Name); err != nil {
-	//	sr.log.Error(err)
-	//	return nil, err
-	//}
-
-	s.Reals = reals
-	s.Healthchecks = healthchecks
-
 	return s, nil
 }
 
 // TODO: implement
-func (sr *ServiceRepo) Update(ctx context.Context) error {
-	panic("implement my repo")
-}
+//func (r *PgRepo) Update(ctx context.Context) error {
+//	panic("implement my repo")
+//}
 
-func (sr *ServiceRepo) Delete(ctx context.Context, s *model.Service) error {
-	c, err := sr.pool.Acquire(ctx)
+func (r *PgRepo) Delete(ctx context.Context, s *model.Service) error {
+	c, err := r.pool.Acquire(ctx)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return err
 	}
 	defer c.Release()
 
-	r, err := c.Exec(ctx, "delete from controller.services where id=$1", s.ID)
+	res, err := c.Exec(ctx, "delete from controller.services where id=$1", s.ID)
 	if err != nil {
-		sr.log.Error(err)
+		r.log.Error(err)
 		return err
 	}
-	if r.RowsAffected() != 1 {
-		sr.log.Debug("delete for non-existing Service ID")
+	if res.RowsAffected() != 1 {
+		r.log.Debug("delete for non-existing Service ID")
 		return nil
 	}
 
 	return nil
+}
+
+// TODO: make it DRY (right now it repeats in every repo)
+func rowExists(ctx context.Context, c *pgxpool.Conn, q string, args ...interface{}) bool {
+	var exists bool
+
+	query := fmt.Sprintf("select exists (%s)", q)
+	err := c.QueryRow(ctx, query, args...).Scan(&exists)
+	if err != nil && err != pgx.ErrNoRows {
+		panic(err)
+	}
+	return exists
 }

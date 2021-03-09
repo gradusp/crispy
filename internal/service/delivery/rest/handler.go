@@ -1,7 +1,7 @@
 package rest
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,38 +9,29 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/gradusp/crispy/internal/audit"
-	"github.com/gradusp/crispy/internal/healthcheck"
-	"github.com/gradusp/crispy/internal/model"
-	"github.com/gradusp/crispy/internal/real"
 	"github.com/gradusp/crispy/internal/service"
 )
 
 type Handler struct {
-	huc healthcheck.Usecase
-	ruc real.Usecase
 	suc service.Usecase
 	auc audit.Usecase
 }
 
-func NewHandler(huc healthcheck.Usecase, ruc real.Usecase, suc service.Usecase, auc audit.Usecase) *Handler {
+func NewHandler(suc service.Usecase, auc audit.Usecase) *Handler {
 	return &Handler{
-		huc: huc,
-		ruc: ruc,
 		suc: suc,
 		auc: auc,
 	}
 }
 
 type request struct {
-	ClusterID     string               `json:"clusterId" binding:"required"`
-	RoutingType   string               `json:"routingType" binding:"required"`
-	BalancingType string               `json:"balancingType" binding:"required"`
-	Proto         string               `json:"proto" binding:"required"`
-	Addr          string               `json:"addr" binding:"required"`
-	Port          int                  `json:"port" binding:"required"`
-	Bandwidth     int                  `json:"bandwidth" binding:"required"`
-	Healthchecks  []*model.Healthcheck `json:"healthchecks" binding:"required"`
-	Reals         []*model.Real        `json:"reals" binding:"required"`
+	ClusterID     string `json:"clusterId" binding:"required"`
+	RoutingType   string `json:"routingType" binding:"required"`
+	BalancingType string `json:"balancingType" binding:"required"`
+	Bandwidth     int    `json:"bandwidth" binding:"required"`
+	Proto         string `json:"proto" binding:"required"`
+	Addr          string `json:"addr" binding:"required"`
+	Port          int    `json:"port" binding:"required"`
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -54,22 +45,17 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// creating service
-	svc, err := h.suc.Create(c.Request.Context(),
+	res, err := h.suc.Create(c.Request.Context(),
 		req.ClusterID,
 		req.RoutingType, req.BalancingType, req.Proto, net.ParseIP(req.Addr), req.Bandwidth, req.Port)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": http.StatusText(http.StatusInternalServerError),
-			"err":     err,
-		})
-		return
-	}
-
-	// creating reals
-	for _, r := range req.Reals {
-		if _, err = h.ruc.Create(c.Request.Context(), svc.ID, r.Addr.To4(), r.HealthcheckAddr.To4(), r.Port, r.HealthcheckPort); err != nil {
+		switch {
+		case errors.Is(err, service.ErrAlreadyExist):
+			loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
+			c.Header("Location", loc)
+			c.AbortWithStatus(http.StatusSeeOther) // FIXME: rework to c.Status()
+			return
+		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"code":    http.StatusInternalServerError,
 				"message": http.StatusText(http.StatusInternalServerError),
@@ -79,31 +65,7 @@ func (h *Handler) Create(c *gin.Context) {
 		}
 	}
 
-	// creating healthchecks
-	for _, hc := range req.Healthchecks {
-		if _, err := h.huc.Create(c.Request.Context(),
-			svc.ID,
-			hc.HelloTimer, hc.ResponseTimer, hc.AliveThreshold, hc.DeadThreshold, hc.Quorum, hc.Hysteresis); err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"code":    http.StatusInternalServerError,
-				"message": http.StatusText(http.StatusInternalServerError),
-				"err":     err,
-			})
-			return
-		}
-	}
-
-	// FIXME: refactor -- handle error or review interface
-	res, _ := h.suc.GetByID(c.Request.Context(), svc.ID)
-
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	j, err := json.Marshal(&res)
-	if err != nil {
-		panic(err)
-	}
-	what := `{"op":"create","obj":"service","dsc":` + string(j) + `}`
-	h.auc.Create(c.Request.Context(), who, what)
+	// TODO: audit
 
 	c.JSON(http.StatusCreated, res)
 }
@@ -145,10 +107,7 @@ func (h *Handler) Delete(c *gin.Context) {
 		return
 	}
 
-	// TODO: should be refactored for DRY reason
-	who := c.Request.RemoteAddr + " -- " + c.Request.UserAgent()
-	what := fmt.Sprintf(`{"op":"delete","obj":"service","dsc":{"id":"%s"}}`, c.Param("id"))
-	h.auc.Create(c.Request.Context(), who, what)
+	// TODO: audit
 
 	c.Status(http.StatusNoContent)
 }

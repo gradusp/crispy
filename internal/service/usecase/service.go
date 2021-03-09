@@ -24,9 +24,7 @@ func (suc ServiceUsecase) Create(
 	a net.IP,
 	bw, port int,
 ) (*model.Service, error) {
-	cl := &model.Cluster{ID: cid}
-
-	bs := &model.Service{
+	s := &model.Service{
 		BalancingType: bt,
 		RoutingType:   rt,
 		Bandwidth:     bw,
@@ -36,7 +34,7 @@ func (suc ServiceUsecase) Create(
 		ClusterID:     cid,
 	}
 
-	return suc.r.Create(ctx, cl, bs)
+	return suc.r.Create(ctx, s)
 }
 
 func (suc ServiceUsecase) Get(ctx context.Context) ([]*model.Service, error) {

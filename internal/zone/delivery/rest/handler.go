@@ -48,7 +48,7 @@ func (h *Handler) Create(c *gin.Context) {
 			// https://tools.ietf.org/html/rfc7231#section-4.3.3
 			loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
 			c.Header("Location", loc)
-			c.AbortWithStatus(http.StatusSeeOther)
+			c.AbortWithStatus(http.StatusSeeOther) // FIXME: rework to c.Status()
 			return
 		default:
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

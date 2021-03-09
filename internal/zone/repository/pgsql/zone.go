@@ -183,6 +183,7 @@ func (zr *ZonePostgresRepo) Delete(ctx context.Context, sz *model.Zone) error {
 	return nil
 }
 
+// TODO: make it DRY (right now it repeats in every repo)
 func rowExists(ctx context.Context, c *pgxpool.Conn, q string, args ...interface{}) bool {
 	var exists bool
 

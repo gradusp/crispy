@@ -48,7 +48,7 @@ func (cr *ClusterRepo) Create(ctx context.Context, sz *model.Zone, cl *model.Clu
 		if errors.As(err, &pgErr) {
 			switch {
 			case pgErr.Code == "23505":
-				cr.log.Warnw("issue with cluster on create",
+				cr.log.Debugw("cluster already exist",
 					"error_body", pgErr.Message,
 					"error_code", pgErr.Code,
 				)

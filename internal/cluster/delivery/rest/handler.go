@@ -44,23 +44,19 @@ func (h *Handler) Create(c *gin.Context) {
 
 	res, err := h.cuc.Create(c.Request.Context(), req.ZoneID, req.Name, req.Capacity)
 	if err != nil {
-		if errors.Is(err, cluster.ErrAlreadyExist) {
-			// TODO: 303 status is not good here since there is 3 params
-			// loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
-			// c.Header("Location", loc)
-			// c.AbortWithStatus(http.StatusSeeOther)
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"code":    http.StatusBadRequest,
-				"message": http.StatusText(http.StatusBadRequest),
-				"note":    cluster.ErrAlreadyExist.Error(),
+		switch {
+		case errors.Is(err, cluster.ErrAlreadyExist):
+			loc := fmt.Sprintf("%s/%s", c.FullPath(), res.ID)
+			c.Header("Location", loc)
+			c.AbortWithStatus(http.StatusSeeOther) // FIXME: rework to c.Status()
+			return
+		default:
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"code":    http.StatusInternalServerError,
+				"message": http.StatusText(http.StatusInternalServerError),
 			})
 			return
 		}
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"code":    http.StatusInternalServerError,
-			"message": http.StatusText(http.StatusInternalServerError),
-		})
-		return
 	}
 
 	j, err := json.Marshal(&res)

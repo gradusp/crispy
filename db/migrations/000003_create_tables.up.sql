@@ -9,12 +9,23 @@ create table if not exists controller.zones
 create table if not exists controller.clusters
 (
     id       uuid default gen_random_uuid(),
-    name     text not null,
     zone_id  uuid not null,
+    name     text not null,
     capacity int  not null,
     primary key (id),
     unique (name),
     foreign key (zone_id) references controller.zones (id)
+);
+
+create table if not exists controller.nodes
+(
+    id         serial,
+    cluster_id uuid not null,
+    addr       inet not null,
+    hostname   text,
+    primary key (id),
+    unique (addr),
+    foreign key (cluster_id) references controller.clusters (id)
 );
 
 create table if not exists controller.services

@@ -40,7 +40,7 @@ func (r PgRepo) Create(ctx context.Context, rl *model.Real) (*model.Real, error)
 			r.log.Error(err)
 			return nil, err
 		}
-		return nil, real.ErrAlreadyExist
+		return rl, real.ErrAlreadyExist
 	}
 
 	query := `insert into controller.reals (service_id, addr, port) values ($1, $2, $3) returning id;`

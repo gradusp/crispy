@@ -112,7 +112,9 @@ func (a *App) Run(port string) error {
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{"http://localhost"} // FIXME: eliminate hardcode
 	config.AllowMethods = []string{"GET", "HEAD", "OPTIONS", "POST", "PUT", "DELETE"}
-	config.AllowHeaders = []string{"LBOS_API_KEY", "Access-Control-Allow-Headers", "Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers"} //nolint:lll
+	// TODO: clean it so no API_KEY used
+	// config.AllowHeaders = []string{"LBOS_API_KEY", "Access-Control-Allow-Headers", "Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers"} //nolint:lll
+	config.AllowHeaders = []string{"Access-Control-Allow-Headers", "Origin", "Accept", "X-Requested-With", "Content-Type", "Access-Control-Request-Method", "Access-Control-Request-Headers"} //nolint:lll
 	config.AllowCredentials = true
 	router.Use(cors.New(config))
 
@@ -130,7 +132,7 @@ func (a *App) Run(port string) error {
 
 	// API Endpoints
 	rapi := router.Group("/api/v1")
-	rapi.Use(zhttp.AuthAPIKey("CRISPY_API_KEY")) // FIXME: current CRISPY_API_KEY flow needs refactor
+	// rapi.Use(zrest.AuthAPIKey("CRISPY_API_KEY")) // FIXME: current CRISPY_API_KEY flow needs refactor
 
 	zrest.RegisterHTTPEndpoint(rapi, a.zoneUC, a.auditUC)
 	crest.RegisterHTTPEndpoint(rapi, a.clusterUC, a.auditUC)

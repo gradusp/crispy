@@ -22,6 +22,7 @@ import (
 	"github.com/gradusp/crispy/internal/audit"
 	"github.com/gradusp/crispy/internal/cluster"
 	"github.com/gradusp/crispy/internal/healthcheck"
+	"github.com/gradusp/crispy/internal/node"
 	"github.com/gradusp/crispy/internal/real"
 	"github.com/gradusp/crispy/internal/service"
 	"github.com/gradusp/crispy/internal/zone"
@@ -48,6 +49,9 @@ import (
 	rpg "github.com/gradusp/crispy/internal/real/repository/pgsql"
 	ruc "github.com/gradusp/crispy/internal/real/usecase"
 
+	nrest "github.com/gradusp/crispy/internal/node/delivery/rest"
+	npg "github.com/gradusp/crispy/internal/node/repository/pgsql"
+	nuc "github.com/gradusp/crispy/internal/node/usecase"
 )
 
 // TODO: https://github.com/caarlos0/env
@@ -59,6 +63,7 @@ type App struct {
 
 	zoneUC        zone.Usecase
 	clusterUC     cluster.Usecase
+	nodeUC        node.Usecase
 	serviceUC     service.Usecase
 	realUC        real.Usecase
 	healthcheckUC healthcheck.Usecase
@@ -86,6 +91,7 @@ func NewApp() *App {
 
 	zoneRepo := zpg.NewPgRepo(pool, logger.Sugar())
 	clusterRepo := cpg.NewPgRepo(pool, kv, logger.Sugar())
+	nodeRepo := npg.NewPgRepo(pool, logger.Sugar())
 	serviceRepo := spg.NewPgRepo(pool, logger.Sugar())
 	realRepo := rpg.NewPgRepo(pool, logger.Sugar())
 	healthcheckRepo := hcpg.NewPgRepo(pool, logger.Sugar())
@@ -95,6 +101,7 @@ func NewApp() *App {
 		logger:        logger,
 		zoneUC:        zuc.NewUsecase(zoneRepo),
 		clusterUC:     cuc.NewUsecase(clusterRepo),
+		nodeUC:        nuc.NewUsecase(nodeRepo),
 		serviceUC:     suc.NewUsecase(serviceRepo),
 		realUC:        ruc.NewUsecase(realRepo),
 		healthcheckUC: hcuc.NewUsecase(healthcheckRepo),
@@ -138,6 +145,7 @@ func (a *App) Run(port string) error {
 	crest.RegisterHTTPEndpoint(rapi, a.clusterUC, a.auditUC)
 	srest.RegisterHTTPEndpoint(rapi, a.serviceUC, a.auditUC)
 	rrest.RegisterHTTPEndpoint(rapi, a.realUC, a.auditUC)
+	nrest.RegisterHTTPEndpoint(rapi, a.nodeUC, a.auditUC)
 
 	// HTTP Server
 	a.httpServer = &http.Server{
